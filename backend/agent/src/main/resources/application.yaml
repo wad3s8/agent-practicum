@@ -1,4 +1,12 @@
 spring:
+  ai:
+    openai:
+      chat:
+        base-url: "https://ai-api.pincode-infra.ru"
+        options:
+          model: "openai/gpt-oss-120b"
+          temperature: 1.0
+      api-key: 123
   application:
     name: agent
   datasource:
