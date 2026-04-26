@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: agent
+  datasource:
+    username: agent
+    password: agent
+    url: jdbc:postgresql://localhost:5432/agent
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+debug: true
+
