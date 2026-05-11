@@ -46,6 +46,6 @@ public class ChatService {
     }
 
     public ChatResponse toResponse(Chat chat) {
-        return new ChatResponse(chat.getId(), chat.getTitle(), chat.isPinned(), chat.getCreatedAt());
+        return new ChatResponse(chat.getId(), chat.getTitle(), chat.isPinned(), chat.getCreatedAt(), chat.getCaseType());
     }
 }

@@ -29,6 +29,9 @@ public class Chat {
     private boolean pinned = false;
     private Instant createdAt;
 
+    @Enumerated(EnumType.STRING)
+    private CaseType caseType = CaseType.GENERAL;
+
     public void addMessage(Message message) {
         messages.add(message);
         message.setChat(this);

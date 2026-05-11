@@ -3,10 +3,9 @@ package com.example.agent.service;
 import com.example.agent.dto.MessageResponse;
 import com.example.agent.dto.SendMessageRequest;
 import com.example.agent.dto.SendMessageResponse;
-import com.example.agent.entity.Chat;
-import com.example.agent.entity.Message;
-import com.example.agent.entity.SenderType;
-import com.example.agent.entity.User;
+import com.example.agent.entity.*;
+import com.example.agent.handler.GeneralHandler;
+import com.example.agent.handler.MeetingSummaryHandler;
 import com.example.agent.repository.ChatRepository;
 import com.example.agent.repository.MessageRepository;
 import lombok.RequiredArgsConstructor;
@@ -23,29 +22,35 @@ public class MessageService {
     private final MessageRepository messageRepository;
     private final ChatRepository chatRepository;
     private final ChatService chatService;
+    private final OrchestratorService orchestratorService;
+    private final MeetingSummaryHandler meetingSummaryHandler;
+    private final GeneralHandler generalHandler;
 
     @Transactional
     public SendMessageResponse sendMessage(SendMessageRequest request, User user) {
         Chat chat;
+
         if (request.chatId() == null) {
+            CaseType caseType = request.caseType() != null
+                    ? request.caseType()
+                    : orchestratorService.detect(request.text());
+
             chat = new Chat();
             chat.setUser(user);
+            chat.setCaseType(caseType);
+            chat.setCreatedAt(Instant.now());
             String text = request.text();
             chat.setTitle(text.length() > 50 ? text.substring(0, 50) : text);
-            chat.setCreatedAt(Instant.now());
             chat = chatRepository.save(chat);
         } else {
             chat = chatService.getOwnedChat(request.chatId(), user);
         }
 
-        Message message = new Message();
-        message.setText(request.text());
-        message.setSender(SenderType.USER);
-        message.setCreatedAt(Instant.now());
-        message.setChat(chat);
-        messageRepository.save(message);
+        Message userMessage = saveMessage(chat, request.text(), SenderType.USER);
+        String aiText = route(chat.getCaseType(), request.text());
+        Message aiMessage = saveMessage(chat, aiText, SenderType.SYSTEM);
 
-        return new SendMessageResponse(chat.getId(), toResponse(message));
+        return new SendMessageResponse(chat.getId(), toResponse(userMessage), toResponse(aiMessage));
     }
 
     public List<MessageResponse> getChatHistory(Long chatId, User user) {
@@ -54,6 +59,22 @@ public class MessageService {
                 .stream()
                 .map(this::toResponse)
                 .toList();
+    }
+
+    private String route(CaseType caseType, String text) {
+        return switch (caseType) {
+            case MEETING_SUMMARY -> meetingSummaryHandler.handle(text);
+            case GENERAL -> generalHandler.handle(text);
+        };
+    }
+
+    private Message saveMessage(Chat chat, String text, SenderType sender) {
+        Message message = new Message();
+        message.setText(text);
+        message.setSender(sender);
+        message.setCreatedAt(Instant.now());
+        message.setChat(chat);
+        return messageRepository.save(message);
     }
 
     private MessageResponse toResponse(Message message) {

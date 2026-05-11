@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class AiConfig {
     @Bean
-    public ChatClient ChatController(ChatClient.Builder chatClientBuilder) {
-    return chatClientBuilder.build();
+    public ChatClient chatClient(ChatClient.Builder chatClientBuilder) {
+        return chatClientBuilder.build();
     }
 }
