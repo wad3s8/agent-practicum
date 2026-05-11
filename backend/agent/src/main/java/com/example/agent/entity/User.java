@@ -1,14 +1,13 @@
 package com.example.agent.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import java.util.List;
 
-@Entity(name = "users")
+@Table(name = "users")
+@Entity
 @NoArgsConstructor
 @Setter
 @Getter
@@ -18,4 +17,17 @@ public class User {
     private Long id;
     private String login;
     private String password;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL,  fetch = FetchType.LAZY)
+    private List<Chat> chats;
+
+    public void addChat(Chat chat){
+        chats.add(chat);
+        chat.setUser(this);
+    }
+
+    public void removeChat(Chat chat){
+        chats.remove(chat);
+        chat.setUser(null);
+    }
 }
