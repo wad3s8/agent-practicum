@@ -6,6 +6,7 @@ import com.example.agent.dto.UpdateChatTitleRequest;
 import com.example.agent.security.UserDetailsAdapter;
 import com.example.agent.service.ChatService;
 import com.example.agent.service.MessageService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -37,7 +38,7 @@ public class ChatController {
     @PatchMapping("/{chatId}/title")
     public ChatResponse updateTitle(
             @PathVariable Long chatId,
-            @RequestBody UpdateChatTitleRequest request,
+            @Valid @RequestBody UpdateChatTitleRequest request,
             @AuthenticationPrincipal UserDetailsAdapter currentUser
     ) {
         return chatService.updateTitle(chatId, currentUser.getUser(), request.title());

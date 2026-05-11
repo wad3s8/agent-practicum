@@ -4,6 +4,7 @@ import com.example.agent.dto.SendMessageRequest;
 import com.example.agent.dto.SendMessageResponse;
 import com.example.agent.security.UserDetailsAdapter;
 import com.example.agent.service.MessageService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -20,7 +21,7 @@ public class MessageController {
 
     @PostMapping
     public SendMessageResponse sendMessage(
-            @RequestBody SendMessageRequest request,
+            @Valid @RequestBody SendMessageRequest request,
             @AuthenticationPrincipal UserDetailsAdapter currentUser
     ) {
         return messageService.sendMessage(request, currentUser.getUser());

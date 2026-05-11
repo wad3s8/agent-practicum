@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 
 @Service
 @RequiredArgsConstructor
@@ -41,7 +42,7 @@ public class ChatService {
 
     public Chat getOwnedChat(Long chatId, User user) {
         return chatRepository.findByIdAndUser(chatId, user)
-                .orElseThrow(() -> new IllegalArgumentException("Chat not found"));
+                .orElseThrow(() -> new NoSuchElementException("Chat not found"));
     }
 
     public ChatResponse toResponse(Chat chat) {

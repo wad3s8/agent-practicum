@@ -30,7 +30,8 @@ public class MessageService {
         if (request.chatId() == null) {
             chat = new Chat();
             chat.setUser(user);
-            chat.setTitle("Новый чат");
+            String text = request.text();
+            chat.setTitle(text.length() > 50 ? text.substring(0, 50) : text);
             chat.setCreatedAt(Instant.now());
             chat = chatRepository.save(chat);
         } else {

@@ -1,3 +1,5 @@
 package com.example.agent.dto;
 
-public record SendMessageRequest(Long chatId, String text) {}
+import jakarta.validation.constraints.NotBlank;
+
+public record SendMessageRequest(Long chatId, @NotBlank String text) {}
