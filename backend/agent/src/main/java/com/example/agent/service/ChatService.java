@@ -12,6 +12,6 @@ public class ChatService {
     private final ChatRepository chatRepository;
 
     public Chat addChat(Chat chat) {
-        chatRepository.save(chat);
+        return chatRepository.save(chat);
     }
 }
