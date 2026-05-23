@@ -20,6 +20,16 @@ spring:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     show-sql: true
 debug: true
+logging:
+  level:
+    org.springframework.web.client: DEBUG
 jwt:
   secret: "${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}"
   expiration: 86400000
+
+jira:
+  base-url: "${JIRA_BASE_URL:https://vladutrobin2006.atlassian.net}"
+  email: "${JIRA_EMAIL:}"
+  api-token: "${JIRA_API_TOKEN:}"
+  # Интервал опроса Jira в миллисекундах (по умолчанию 5 минут)
+  polling-interval-ms: "${JIRA_POLLING_INTERVAL_MS:300000}"

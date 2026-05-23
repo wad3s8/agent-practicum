@@ -46,8 +46,10 @@ public class MessageService {
             chat = chatService.getOwnedChat(request.chatId(), user);
         }
 
+        List<Message> history = messageRepository.findByChatOrderByCreatedAtAsc(chat);
+
         Message userMessage = saveMessage(chat, request.text(), SenderType.USER);
-        String aiText = route(chat.getCaseType(), request.text());
+        String aiText = route(chat.getCaseType(), request.text(), history);
         Message aiMessage = saveMessage(chat, aiText, SenderType.SYSTEM);
 
         return new SendMessageResponse(chat.getId(), toResponse(userMessage), toResponse(aiMessage));
@@ -61,10 +63,10 @@ public class MessageService {
                 .toList();
     }
 
-    private String route(CaseType caseType, String text) {
+    private String route(CaseType caseType, String text, List<Message> history) {
         return switch (caseType) {
-            case MEETING_SUMMARY -> meetingSummaryHandler.handle(text);
-            case GENERAL -> generalHandler.handle(text);
+            case MEETING_SUMMARY -> meetingSummaryHandler.handle(text, history);
+            case GENERAL -> generalHandler.handle(text, history);
         };
     }
 

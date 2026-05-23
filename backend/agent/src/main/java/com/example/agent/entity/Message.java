@@ -15,6 +15,7 @@ public class Message {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private Long id;
+    @Column(columnDefinition = "TEXT")
     private String text;
     @Enumerated(EnumType.STRING)
     private SenderType sender;
