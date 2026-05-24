@@ -7,7 +7,7 @@ WORKDIR /app
 COPY mvnw pom.xml ./
 COPY .mvn .mvn
 
-RUN ./mvnw dependency:go-offline -q
+RUN chmod +x mvnw && ./mvnw dependency:go-offline -q
 
 COPY src ./src
 
@@ -25,5 +25,11 @@ COPY --from=builder /app/target/*.jar app.jar
 USER spring
 
 EXPOSE 8080
+
+# Jira credentials — передавать при запуске через -e или docker-compose environment
+ENV JIRA_BASE_URL=""
+ENV JIRA_EMAIL=""
+ENV JIRA_API_TOKEN=""
+ENV JWT_SECRET=""
 
 ENTRYPOINT ["java", "-jar", "app.jar"]
