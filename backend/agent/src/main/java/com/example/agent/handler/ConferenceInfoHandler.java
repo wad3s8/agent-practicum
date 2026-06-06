@@ -2,6 +2,7 @@ package com.example.agent.handler;
 
 import com.example.agent.client.ConfluenceClient;
 import com.example.agent.dto.confluence.ConfluencePageDto;
+import com.example.agent.dto.confluence.ConfluenceSearchResponse;
 import com.example.agent.entity.Message;
 import com.example.agent.entity.SenderType;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +15,8 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Slf4j
 @Component
@@ -23,65 +26,86 @@ public class ConferenceInfoHandler {
     private final ChatClient chatClient;
     private final ConfluenceClient confluenceClient;
 
-    private static final int MAX_PAGES = 5;
-    private static final int MAX_PAGE_CHARS = 3000;
+    private static final int MAX_PAGE_CHARS = 4000;
 
-    private static final String CQL_PROMPT = """
-            Преобразуй вопрос пользователя в CQL-запрос для поиска в Confluence.
-            Ответь ТОЛЬКО CQL-строкой без кавычек и без markdown.
-            Используй формат: text ~ "ключевые слова" AND type = page
-            Пример: вопрос "политика отпусков" -> text ~ "политика отпусков" AND type = page
+    private static final String SELECT_PROMPT = """
+            Вот список страниц из Confluence (номер. ID | Заголовок):
+            %s
+
+            Вопрос пользователя: "%s"
+
+            Выбери ID страницы, которая наиболее вероятно содержит ответ на вопрос.
+            Ответь ТОЛЬКО числом ID страницы. Если ни одна не подходит — ответь: null
             """;
 
     private static final String ANSWER_PROMPT = """
             Ты — ассистент по корпоративной базе знаний Confluence.
-            На основе найденных страниц из Confluence ответь на вопрос пользователя.
-            Если информация найдена — ответь чётко и по делу, сославшись на название страницы.
+            На основе содержимого страницы ответь на вопрос пользователя чётко и по делу.
             Если информации недостаточно — так и скажи.
             Отвечай на русском языке. Используй Markdown.
             """;
 
     public String handle(String userText, List<Message> history) {
-        String cql = generateCql(userText);
-        log.debug("Confluence CQL: {}", cql);
-
-        List<ConfluencePageDto> pages = searchConfluence(cql);
-        if (pages == null) {
+        List<ConfluencePageDto> allPages = fetchAllPages();
+        if (allPages == null) {
             return "Ошибка при обращении к Confluence. Попробуйте позже.";
         }
-        if (pages.isEmpty()) {
-            return "В Confluence не найдено страниц по вашему запросу. Попробуйте переформулировать вопрос.";
+        if (allPages.isEmpty()) {
+            return "В Confluence нет доступных страниц.";
         }
 
-        return answerWithContext(userText, pages, history);
-    }
-
-    private String generateCql(String userText) {
-        try {
-            return chatClient.prompt()
-                    .system(CQL_PROMPT)
-                    .user(userText)
-                    .call()
-                    .content()
-                    .trim();
-        } catch (Exception e) {
-            log.error("CQL generation failed: {}", e.getMessage());
-            return "text ~ \"" + userText + "\" AND type = page";
+        String selectedId = selectBestPage(userText, allPages);
+        if (selectedId == null || selectedId.equalsIgnoreCase("null")) {
+            return "Не удалось найти подходящую страницу в Confluence по вашему вопросу.";
         }
+
+        ConfluencePageDto page = fetchPageContent(selectedId);
+        if (page == null) {
+            return "Ошибка при загрузке страницы из Confluence.";
+        }
+
+        log.debug("Selected Confluence page: {} (id={})", page.title(), selectedId);
+        return answerFromPage(userText, page, history);
     }
 
-    private List<ConfluencePageDto> searchConfluence(String cql) {
+    private List<ConfluencePageDto> fetchAllPages() {
         try {
-            var response = confluenceClient.search(cql, "body.storage,space", MAX_PAGES);
+            ConfluenceSearchResponse response = confluenceClient.getAllPages("page", 50);
             return response.results() != null ? response.results() : List.of();
         } catch (Exception e) {
-            log.error("Confluence search failed for CQL '{}': {}", cql, e.getMessage());
+            log.error("Failed to fetch Confluence pages: {}", e.getMessage());
             return null;
         }
     }
 
-    private String answerWithContext(String userText, List<ConfluencePageDto> pages, List<Message> history) {
-        String pagesText = buildPagesContext(pages);
+    private String selectBestPage(String userText, List<ConfluencePageDto> pages) {
+        String pageList = IntStream.range(0, pages.size())
+                .mapToObj(i -> (i + 1) + ". " + pages.get(i).id() + " | " + pages.get(i).title())
+                .collect(Collectors.joining("\n"));
+
+        try {
+            return chatClient.prompt()
+                    .user(String.format(SELECT_PROMPT, pageList, userText))
+                    .call()
+                    .content()
+                    .trim();
+        } catch (Exception e) {
+            log.error("Page selection failed: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    private ConfluencePageDto fetchPageContent(String pageId) {
+        try {
+            return confluenceClient.getPage(pageId, "body.storage,space");
+        } catch (Exception e) {
+            log.error("Failed to fetch Confluence page {}: {}", pageId, e.getMessage());
+            return null;
+        }
+    }
+
+    private String answerFromPage(String userText, ConfluencePageDto page, List<Message> history) {
+        String pageContent = extractText(page);
 
         List<org.springframework.ai.chat.messages.Message> messages = new ArrayList<>();
         messages.add(new SystemMessage(ANSWER_PROMPT));
@@ -90,7 +114,9 @@ public class ConferenceInfoHandler {
                         ? new UserMessage(msg.getText())
                         : new AssistantMessage(msg.getText())
         ));
-        messages.add(new UserMessage("Вопрос: " + userText + "\n\nСтраницы из Confluence:\n" + pagesText));
+        messages.add(new UserMessage(
+                "Страница: «" + page.title() + "»\n\n" + pageContent + "\n\nВопрос: " + userText
+        ));
 
         return chatClient.prompt()
                 .messages(messages)
@@ -98,30 +124,11 @@ public class ConferenceInfoHandler {
                 .content();
     }
 
-    private String buildPagesContext(List<ConfluencePageDto> pages) {
-        StringBuilder sb = new StringBuilder();
-        for (ConfluencePageDto page : pages) {
-            sb.append("### ").append(page.title());
-            if (page.space() != null) {
-                sb.append(" (").append(page.space().name()).append(")");
-            }
-            sb.append("\n");
-
-            if (page.body() != null && page.body().storage() != null) {
-                String text = stripHtml(page.body().storage().value());
-                if (text.length() > MAX_PAGE_CHARS) {
-                    text = text.substring(0, MAX_PAGE_CHARS) + "...";
-                }
-                sb.append(text);
-            }
-            sb.append("\n\n");
-        }
-        return sb.toString();
-    }
-
-    private String stripHtml(String html) {
+    private String extractText(ConfluencePageDto page) {
+        if (page.body() == null || page.body().storage() == null) return "";
+        String html = page.body().storage().value();
         if (html == null) return "";
-        return html
+        String text = html
                 .replaceAll("<[^>]+>", " ")
                 .replaceAll("&nbsp;", " ")
                 .replaceAll("&amp;", "&")
@@ -129,5 +136,6 @@ public class ConferenceInfoHandler {
                 .replaceAll("&gt;", ">")
                 .replaceAll("\\s{2,}", " ")
                 .trim();
+        return text.length() > MAX_PAGE_CHARS ? text.substring(0, MAX_PAGE_CHARS) + "..." : text;
     }
 }
