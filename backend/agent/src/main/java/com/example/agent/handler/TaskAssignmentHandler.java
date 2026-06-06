@@ -17,9 +17,10 @@ import java.util.List;
 @RequiredArgsConstructor
 public class TaskAssignmentHandler {
 
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
     private final ChatClient chatClient;
     private final JiraClient jiraClient;
-    private final ObjectMapper objectMapper;
 
     private static final String EXTRACT_PROMPT = """
             Извлеки из сообщения пользователя ключ задачи Jira и имя исполнителя.
@@ -78,7 +79,7 @@ public class TaskAssignmentHandler {
                     .call()
                     .content()
                     .trim();
-            return objectMapper.readValue(json, TaskExtractionResult.class);
+            return OBJECT_MAPPER.readValue(json, TaskExtractionResult.class);
         } catch (Exception e) {
             log.error("Task extraction failed: {}", e.getMessage());
             return null;

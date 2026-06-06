@@ -4,7 +4,6 @@ import com.example.agent.client.JiraClient;
 import com.example.agent.dto.jira.JiraAssigneeRequest;
 import com.example.agent.dto.jira.JiraUserDto;
 import com.example.agent.entity.Message;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,7 +38,7 @@ class TaskAssignmentHandlerTest {
         when(spec.system(anyString())).thenReturn(spec);
         when(spec.user(anyString())).thenReturn(spec);
         when(spec.call()).thenReturn(callSpec);
-        handler = new TaskAssignmentHandler(chatClient, jiraClient, new ObjectMapper());
+        handler = new TaskAssignmentHandler(chatClient, jiraClient);
     }
 
     @Test
