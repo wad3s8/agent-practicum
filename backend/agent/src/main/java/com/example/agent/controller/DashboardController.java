@@ -1,7 +1,6 @@
 package com.example.agent.controller;
 
-import com.example.agent.dto.DashboardTaskResponse;
-import com.example.agent.dto.UpdateComplexityRequest;
+import com.example.agent.dto.*;
 import com.example.agent.service.DashboardService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -44,5 +43,49 @@ public class DashboardController {
             @Valid @RequestBody UpdateComplexityRequest request
     ) {
         return dashboardService.updateComplexity(issueKey, request.complexity());
+    }
+
+    /**
+     * GET /api/dashboard/stats?teamKey=PDM&weekStart=2025-05-19
+     *
+     * Возвращает блоки статистики:
+     * — кол-во задач "В работе", "Все (бэклог)", "Готово" за выбранную неделю
+     * — дельту по сравнению с предыдущей неделей
+     */
+    @GetMapping("/stats")
+    public DashboardStatsResponse getStats(
+            @RequestParam(required = false) String teamKey,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate weekStart
+    ) {
+        return dashboardService.getStats(teamKey, weekStart);
+    }
+
+    /**
+     * GET /api/dashboard/charts?teamKey=PDM&weekStart=2025-05-19
+     *
+     * Возвращает данные для двух столбчатых диаграмм:
+     * — кол-во выполненных задач на человека (лёгких / сложных)
+     * — кол-во активных задач на человека (лёгких / сложных)
+     */
+    @GetMapping("/charts")
+    public DashboardChartsResponse getCharts(
+            @RequestParam(required = false) String teamKey,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate weekStart
+    ) {
+        return dashboardService.getCharts(teamKey, weekStart);
+    }
+
+    /**
+     * GET /api/dashboard/roadmap?teamKey=PDM
+     *
+     * Возвращает данные для Roadmap (диаграмма Ганта):
+     * — задачи команды с разбивкой на этапы (подзадачи из Jira)
+     * — у каждого этапа свои даты и исполнитель
+     */
+    @GetMapping("/roadmap")
+    public DashboardRoadmapResponse getRoadmap(
+            @RequestParam(required = false) String teamKey
+    ) {
+        return dashboardService.getRoadmap(teamKey);
     }
 }
