@@ -4,8 +4,11 @@ import com.example.agent.dto.MessageResponse;
 import com.example.agent.dto.SendMessageRequest;
 import com.example.agent.dto.SendMessageResponse;
 import com.example.agent.entity.*;
+import com.example.agent.handler.ConferenceInfoHandler;
 import com.example.agent.handler.GeneralHandler;
+import com.example.agent.handler.JiraInfoHandler;
 import com.example.agent.handler.MeetingSummaryHandler;
+import com.example.agent.handler.TaskAssignmentHandler;
 import com.example.agent.repository.ChatRepository;
 import com.example.agent.repository.MessageRepository;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +27,9 @@ public class MessageService {
     private final ChatService chatService;
     private final OrchestratorService orchestratorService;
     private final MeetingSummaryHandler meetingSummaryHandler;
+    private final ConferenceInfoHandler conferenceInfoHandler;
+    private final TaskAssignmentHandler taskAssignmentHandler;
+    private final JiraInfoHandler jiraInfoHandler;
     private final GeneralHandler generalHandler;
 
     @Transactional
@@ -66,6 +72,9 @@ public class MessageService {
     private String route(CaseType caseType, String text, List<Message> history) {
         return switch (caseType) {
             case MEETING_SUMMARY -> meetingSummaryHandler.handle(text, history);
+            case CONFERENCE_INFO -> conferenceInfoHandler.handle(text, history);
+            case TASK_ASSIGNMENT -> taskAssignmentHandler.handle(text, history);
+            case JIRA_INFO -> jiraInfoHandler.handle(text, history);
             case GENERAL -> generalHandler.handle(text, history);
         };
     }

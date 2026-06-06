@@ -7,6 +7,9 @@ spring:
           model: "openai/gpt-oss-120b"
           temperature: 1.0
       api-key: 123
+    retry:
+      max-attempts: 1
+      on-client-errors: false
   application:
     name: agent
   datasource:
