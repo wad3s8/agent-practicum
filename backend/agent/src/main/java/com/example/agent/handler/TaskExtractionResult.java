@@ -1,4 +1,4 @@
 package com.example.agent.handler;
 
-record TaskExtractionResult(String issueKey, String assigneeName) {
+record TaskExtractionResult(String taskTitle, String projectKey, String assigneeName) {
 }

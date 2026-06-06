@@ -1,7 +1,9 @@
 package com.example.agent.handler;
 
 import com.example.agent.client.JiraClient;
-import com.example.agent.dto.jira.JiraAssigneeRequest;
+import com.example.agent.dto.jira.JiraCreateIssueRequest;
+import com.example.agent.dto.jira.JiraCreateIssueResponse;
+import com.example.agent.dto.jira.JiraProjectDto;
 import com.example.agent.dto.jira.JiraUserDto;
 import com.example.agent.entity.Message;
 import org.junit.jupiter.api.BeforeEach;
@@ -9,6 +11,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.ai.chat.client.ChatClient;
 
 import java.util.List;
@@ -16,13 +20,12 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class TaskAssignmentHandlerTest {
 
     @Mock ChatClient chatClient;
@@ -42,89 +45,89 @@ class TaskAssignmentHandlerTest {
     }
 
     @Test
-    void handle_successfulAssignment_returnsConfirmation() {
+    void handle_successfulCreationWithAssignee_returnsConfirmation() {
         when(callSpec.content()).thenReturn(
                 """
-                {"issueKey":"PROJ-42","assigneeName":"Иван Петров"}""");
-        JiraUserDto user = new JiraUserDto("Иван Петров", "ivan@example.com", "account-abc");
+                {"taskTitle":"Настроить CI","projectKey":"PROJ","assigneeName":"Иван Петров"}""");
+        JiraUserDto user = new JiraUserDto("Иван Петров", "ivan@example.com", "acc-ivan");
         when(jiraClient.searchUsers("Иван Петров")).thenReturn(List.of(user));
+        when(jiraClient.createIssue(any())).thenReturn(new JiraCreateIssueResponse("10001", "PROJ-5", "https://jira/PROJ-5"));
 
-        String result = handler.handle("Назначь PROJ-42 на Ивана Петрова", List.of());
+        String result = handler.handle("Создай задачу «Настроить CI» для Ивана Петрова в проекте PROJ", List.of());
 
-        assertThat(result).contains("PROJ-42").contains("Иван Петров");
-        verify(jiraClient).assignIssue(eq("PROJ-42"), any(JiraAssigneeRequest.class));
+        assertThat(result).contains("PROJ-5").contains("Иван Петров").contains("Настроить CI");
+        verify(jiraClient).createIssue(any(JiraCreateIssueRequest.class));
     }
 
     @Test
-    void handle_passesCorrectAccountIdToJira() {
+    void handle_noProjectKeyInMessage_usesFirstProject() {
         when(callSpec.content()).thenReturn(
                 """
-                {"issueKey":"ABC-7","assigneeName":"Мария Смирнова"}""");
-        JiraUserDto user = new JiraUserDto("Мария Смирнова", "maria@example.com", "uid-777");
-        when(jiraClient.searchUsers("Мария Смирнова")).thenReturn(List.of(user));
+                {"taskTitle":"Починить баг","projectKey":null,"assigneeName":null}""");
+        when(jiraClient.getProjects()).thenReturn(List.of(new JiraProjectDto("AP", "Alpha Project", null)));
+        when(jiraClient.createIssue(any())).thenReturn(new JiraCreateIssueResponse("10002", "AP-1", "https://jira/AP-1"));
 
-        handler.handle("Назначь ABC-7 на Марию", List.of());
+        String result = handler.handle("Создай задачу «Починить баг»", List.of());
 
-        verify(jiraClient).assignIssue("ABC-7", new JiraAssigneeRequest("uid-777"));
+        assertThat(result).contains("AP-1").contains("Починить баг");
+    }
+
+    @Test
+    void handle_noProjectsInJira_returnsError() {
+        when(callSpec.content()).thenReturn(
+                """
+                {"taskTitle":"Задача","projectKey":null,"assigneeName":null}""");
+        when(jiraClient.getProjects()).thenReturn(List.of());
+
+        String result = handler.handle("Создай задачу", List.of());
+
+        assertThat(result).containsIgnoringCase("проект");
+        verify(jiraClient, never()).createIssue(any());
     }
 
     @Test
     void handle_userNotFound_returnsUserNotFoundMessage() {
         when(callSpec.content()).thenReturn(
                 """
-                {"issueKey":"PROJ-42","assigneeName":"Неизвестный Человек"}""");
-        when(jiraClient.searchUsers("Неизвестный Человек")).thenReturn(List.of());
+                {"taskTitle":"Задача","projectKey":"PROJ","assigneeName":"Неизвестный"}""");
+        when(jiraClient.searchUsers("Неизвестный")).thenReturn(List.of());
 
-        String result = handler.handle("Назначь PROJ-42 на Неизвестного Человека", List.of());
+        String result = handler.handle("Создай задачу для Неизвестного", List.of());
 
         assertThat(result).containsIgnoringCase("не найден");
-        verify(jiraClient, never()).assignIssue(anyString(), any());
-    }
-
-    @Test
-    void handle_extractionReturnsNullIssueKey_returnsErrorMessage() {
-        when(callSpec.content()).thenReturn(
-                """
-                {"issueKey":null,"assigneeName":"Иван Петров"}""");
-
-        String result = handler.handle("Назначь задачу на Ивана", List.of());
-
-        assertThat(result).containsIgnoringCase("ключ задачи");
-        verify(jiraClient, never()).searchUsers(anyString());
-    }
-
-    @Test
-    void handle_extractionReturnsNullAssigneeName_returnsErrorMessage() {
-        when(callSpec.content()).thenReturn(
-                """
-                {"issueKey":"PROJ-10","assigneeName":null}""");
-
-        String result = handler.handle("Назначь PROJ-10 на кого-нибудь", List.of());
-
-        assertThat(result).containsIgnoringCase("исполнителя");
-        verify(jiraClient, never()).searchUsers(anyString());
+        verify(jiraClient, never()).createIssue(any());
     }
 
     @Test
     void handle_invalidJson_returnsExtractionError() {
-        when(callSpec.content()).thenReturn("Не могу определить задачу");
+        when(callSpec.content()).thenReturn("не могу разобрать");
 
-        String result = handler.handle("Назначь что-то на кого-то", List.of());
+        String result = handler.handle("сделай что-нибудь", List.of());
 
         assertThat(result).containsIgnoringCase("не удалось");
-        verify(jiraClient, never()).searchUsers(anyString());
+        verify(jiraClient, never()).createIssue(any());
     }
 
     @Test
-    void handle_jiraAssignThrows_returnsErrorMessage() {
+    void handle_nullTaskTitle_returnsError() {
         when(callSpec.content()).thenReturn(
                 """
-                {"issueKey":"PROJ-1","assigneeName":"Тест Тестов"}""");
-        JiraUserDto user = new JiraUserDto("Тест Тестов", "test@example.com", "acc-123");
-        when(jiraClient.searchUsers("Тест Тестов")).thenReturn(List.of(user));
-        doThrow(new RuntimeException("Jira недоступна")).when(jiraClient).assignIssue(anyString(), any());
+                {"taskTitle":null,"projectKey":"PROJ","assigneeName":"Иван"}""");
 
-        String result = handler.handle("Назначь PROJ-1 на Тест Тестова", List.of());
+        String result = handler.handle("что-то создай", List.of());
+
+        assertThat(result).containsIgnoringCase("название задачи");
+        verify(jiraClient, never()).createIssue(any());
+    }
+
+    @Test
+    void handle_jiraCreateThrows_returnsErrorMessage() {
+        when(callSpec.content()).thenReturn(
+                """
+                {"taskTitle":"Тест","projectKey":"PROJ","assigneeName":null}""");
+        when(jiraClient.createIssue(any())).thenThrow(new RuntimeException("Jira недоступна"));
+
+        String result = handler.handle("Создай задачу Тест", List.of());
 
         assertThat(result).containsIgnoringCase("ошибка");
     }

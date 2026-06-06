@@ -1,6 +1,8 @@
 package com.example.agent.client;
 
 import com.example.agent.dto.jira.JiraAssigneeRequest;
+import com.example.agent.dto.jira.JiraCreateIssueRequest;
+import com.example.agent.dto.jira.JiraCreateIssueResponse;
 import com.example.agent.dto.jira.JiraProjectDto;
 import com.example.agent.dto.jira.JiraSearchRequest;
 import com.example.agent.dto.jira.JiraSearchResponse;
@@ -29,4 +31,7 @@ public interface JiraClient {
 
     @PutExchange("/rest/api/3/issue/{issueKey}/assignee")
     void assignIssue(@PathVariable("issueKey") String issueKey, @RequestBody JiraAssigneeRequest request);
+
+    @PostExchange("/rest/api/3/issue")
+    JiraCreateIssueResponse createIssue(@RequestBody JiraCreateIssueRequest request);
 }
