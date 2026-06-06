@@ -27,10 +27,10 @@ public class TaskAssignmentHandler {
     private static final String EXTRACT_PROMPT = """
             Извлеки из сообщения пользователя параметры для создания задачи в Jira.
             Ответь ТОЛЬКО валидным JSON без markdown-блоков, строго в формате:
-            {"taskTitle":"Название задачи","projectKey":"PROJ","assigneeName":"Иван Петров"}
+            {"taskTitle":"Название задачи","projectHint":"My PM Team","assigneeName":"Иван Петров"}
             Правила:
-            - taskTitle: название задачи из сообщения пользователя, если не указано — придумай краткое
-            - projectKey: ключ проекта Jira (обычно заглавные буквы, например "PROJ"), если не упомянут — null
+            - taskTitle: название задачи, если не указано — составь краткое из смысла запроса
+            - projectHint: название или ключ проекта ТОЧНО как написал пользователь, если не упомянут — null
             - assigneeName: имя исполнителя, если не указан — null
             """;
 
@@ -43,9 +43,10 @@ public class TaskAssignmentHandler {
             return "Не удалось определить название задачи. Уточните, например: «Создай задачу Настроить CI»";
         }
 
-        String projectKey = resolveProjectKey(extraction.projectKey());
+        String projectKey = resolveProjectKey(extraction.projectHint());
         if (projectKey == null) {
-            return "Не удалось определить проект. Укажите ключ проекта, например: «в проекте PROJ»";
+            String hint = extraction.projectHint() != null ? " «" + extraction.projectHint() + "»" : "";
+            return "Проект" + hint + " не найден в Jira. Укажите точное название или ключ проекта.";
         }
 
         String accountId = null;
@@ -102,17 +103,26 @@ public class TaskAssignmentHandler {
         }
     }
 
-    private String resolveProjectKey(String projectKey) {
-        if (projectKey != null) return projectKey;
+    private String resolveProjectKey(String projectHint) {
+        List<JiraProjectDto> projects;
         try {
-            List<JiraProjectDto> projects = jiraClient.getProjects();
-            if (projects != null && !projects.isEmpty()) {
-                return projects.get(0).key();
-            }
+            projects = jiraClient.getProjects();
         } catch (Exception e) {
             log.error("Failed to fetch Jira projects: {}", e.getMessage());
+            return null;
         }
-        return null;
+
+        if (projects == null || projects.isEmpty()) return null;
+
+        if (projectHint == null) return projects.get(0).key();
+
+        String hint = projectHint.toLowerCase();
+        return projects.stream()
+                .filter(p -> p.key().equalsIgnoreCase(projectHint)
+                        || p.name().toLowerCase().contains(hint))
+                .map(JiraProjectDto::key)
+                .findFirst()
+                .orElse(null);
     }
 
     private JiraUserDto findUser(String name) {

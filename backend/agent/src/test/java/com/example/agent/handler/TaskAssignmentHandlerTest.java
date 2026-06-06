@@ -48,26 +48,43 @@ class TaskAssignmentHandlerTest {
     void handle_successfulCreationWithAssignee_returnsConfirmation() {
         when(callSpec.content()).thenReturn(
                 """
-                {"taskTitle":"Настроить CI","projectKey":"PROJ","assigneeName":"Иван Петров"}""");
+                {"taskTitle":"Настроить CI","projectHint":"PROJ","assigneeName":"Иван Петров"}""");
         JiraUserDto user = new JiraUserDto("Иван Петров", "ivan@example.com", "acc-ivan");
+        when(jiraClient.getProjects()).thenReturn(List.of(new JiraProjectDto("PROJ", "My Project", null)));
         when(jiraClient.searchUsers("Иван Петров")).thenReturn(List.of(user));
         when(jiraClient.createIssue(any())).thenReturn(new JiraCreateIssueResponse("10001", "PROJ-5", "https://jira/PROJ-5"));
 
-        String result = handler.handle("Создай задачу «Настроить CI» для Ивана Петрова в проекте PROJ", List.of());
+        String result = handler.handle("Создай задачу Настроить CI для Ивана Петрова в проекте PROJ", List.of());
 
         assertThat(result).contains("PROJ-5").contains("Иван Петров").contains("Настроить CI");
         verify(jiraClient).createIssue(any(JiraCreateIssueRequest.class));
     }
 
     @Test
-    void handle_noProjectKeyInMessage_usesFirstProject() {
+    void handle_projectMatchedByName_usesCorrectKey() {
         when(callSpec.content()).thenReturn(
                 """
-                {"taskTitle":"Починить баг","projectKey":null,"assigneeName":null}""");
+                {"taskTitle":"Задача","projectHint":"My PM Team","assigneeName":null}""");
+        when(jiraClient.getProjects()).thenReturn(List.of(
+                new JiraProjectDto("SAM1", "Annual Product Roadmap", null),
+                new JiraProjectDto("PDM", "My PM Team", null)
+        ));
+        when(jiraClient.createIssue(any())).thenReturn(new JiraCreateIssueResponse("10002", "PDM-1", "https://jira/PDM-1"));
+
+        String result = handler.handle("Создай задачу в проекте My PM Team", List.of());
+
+        assertThat(result).contains("PDM-1");
+    }
+
+    @Test
+    void handle_noProjectHintInMessage_usesFirstProject() {
+        when(callSpec.content()).thenReturn(
+                """
+                {"taskTitle":"Починить баг","projectHint":null,"assigneeName":null}""");
         when(jiraClient.getProjects()).thenReturn(List.of(new JiraProjectDto("AP", "Alpha Project", null)));
         when(jiraClient.createIssue(any())).thenReturn(new JiraCreateIssueResponse("10002", "AP-1", "https://jira/AP-1"));
 
-        String result = handler.handle("Создай задачу «Починить баг»", List.of());
+        String result = handler.handle("Создай задачу Починить баг", List.of());
 
         assertThat(result).contains("AP-1").contains("Починить баг");
     }
@@ -76,7 +93,7 @@ class TaskAssignmentHandlerTest {
     void handle_noProjectsInJira_returnsError() {
         when(callSpec.content()).thenReturn(
                 """
-                {"taskTitle":"Задача","projectKey":null,"assigneeName":null}""");
+                {"taskTitle":"Задача","projectHint":null,"assigneeName":null}""");
         when(jiraClient.getProjects()).thenReturn(List.of());
 
         String result = handler.handle("Создай задачу", List.of());
@@ -86,10 +103,24 @@ class TaskAssignmentHandlerTest {
     }
 
     @Test
+    void handle_projectHintNotFound_returnsError() {
+        when(callSpec.content()).thenReturn(
+                """
+                {"taskTitle":"Задача","projectHint":"NONEXISTENT","assigneeName":null}""");
+        when(jiraClient.getProjects()).thenReturn(List.of(new JiraProjectDto("PROJ", "My Project", null)));
+
+        String result = handler.handle("Создай задачу в проекте NONEXISTENT", List.of());
+
+        assertThat(result).containsIgnoringCase("не найден");
+        verify(jiraClient, never()).createIssue(any());
+    }
+
+    @Test
     void handle_userNotFound_returnsUserNotFoundMessage() {
         when(callSpec.content()).thenReturn(
                 """
-                {"taskTitle":"Задача","projectKey":"PROJ","assigneeName":"Неизвестный"}""");
+                {"taskTitle":"Задача","projectHint":"PROJ","assigneeName":"Неизвестный"}""");
+        when(jiraClient.getProjects()).thenReturn(List.of(new JiraProjectDto("PROJ", "My Project", null)));
         when(jiraClient.searchUsers("Неизвестный")).thenReturn(List.of());
 
         String result = handler.handle("Создай задачу для Неизвестного", List.of());
@@ -112,7 +143,7 @@ class TaskAssignmentHandlerTest {
     void handle_nullTaskTitle_returnsError() {
         when(callSpec.content()).thenReturn(
                 """
-                {"taskTitle":null,"projectKey":"PROJ","assigneeName":"Иван"}""");
+                {"taskTitle":null,"projectHint":"PROJ","assigneeName":"Иван"}""");
 
         String result = handler.handle("что-то создай", List.of());
 
@@ -124,7 +155,8 @@ class TaskAssignmentHandlerTest {
     void handle_jiraCreateThrows_returnsErrorMessage() {
         when(callSpec.content()).thenReturn(
                 """
-                {"taskTitle":"Тест","projectKey":"PROJ","assigneeName":null}""");
+                {"taskTitle":"Тест","projectHint":"PROJ","assigneeName":null}""");
+        when(jiraClient.getProjects()).thenReturn(List.of(new JiraProjectDto("PROJ", "My Project", null)));
         when(jiraClient.createIssue(any())).thenThrow(new RuntimeException("Jira недоступна"));
 
         String result = handler.handle("Создай задачу Тест", List.of());
