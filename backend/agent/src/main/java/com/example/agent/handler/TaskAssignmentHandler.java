@@ -1,6 +1,7 @@
 package com.example.agent.handler;
 
 import com.example.agent.client.JiraClient;
+import com.example.agent.dto.jira.JiraAssigneeRequest;
 import com.example.agent.dto.jira.JiraCreateIssueRequest;
 import com.example.agent.dto.jira.JiraCreateIssueResponse;
 import com.example.agent.dto.jira.JiraProjectDto;
@@ -29,9 +30,11 @@ public class TaskAssignmentHandler {
             Ответь ТОЛЬКО валидным JSON без markdown-блоков, строго в формате:
             {"taskTitle":"Название задачи","projectHint":"My PM Team","assigneeName":"Иван Петров"}
             Правила:
-            - taskTitle: название задачи, если не указано — составь краткое из смысла запроса
+            - taskTitle: ТОЛЬКО название задачи — без имён людей и без названия проекта
             - projectHint: название или ключ проекта ТОЧНО как написал пользователь, если не упомянут — null
-            - assigneeName: имя исполнителя, если не указан — null
+            - assigneeName: если в тексте есть "для [имя]", "на [имя]", "назначь [имя]" — это исполнитель; если не указан — null
+            Пример: "Создай задачу Настроить CI для Ивана в проекте PROJ"
+              -> {"taskTitle":"Настроить CI","projectHint":"PROJ","assigneeName":"Иван"}
             """;
 
     public String handle(String userText, List<Message> history) {
@@ -75,7 +78,13 @@ public class TaskAssignmentHandler {
 
         try {
             JiraCreateIssueResponse response = jiraClient.createIssue(request);
-            if (assigneeDisplay != null) {
+
+            if (accountId != null) {
+                try {
+                    jiraClient.assignIssue(response.key(), new JiraAssigneeRequest(accountId));
+                } catch (Exception e) {
+                    log.warn("Assign after create failed for {}: {}", response.key(), e.getMessage());
+                }
                 return String.format("Задача **%s** («%s») успешно создана и назначена на **%s**.",
                         response.key(), extraction.taskTitle(), assigneeDisplay);
             } else {
