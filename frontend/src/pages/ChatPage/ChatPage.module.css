@@ -1,0 +1,532 @@
+.page {
+  --chat-panel-bg: #f7f9fb;
+  --chat-input-bg: #eef0f2;
+  --chat-active-bg: #e7efff;
+  --chat-chip-bg: #fbfbfb;
+  --chat-border: #e5e5e5;
+  --chat-danger: #ed2323;
+
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 260px;
+  min-height: 100vh;
+  background: var(--app-color-surface);
+}
+
+.workspace {
+  position: relative;
+  min-width: 0;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--app-color-surface);
+}
+
+.roleSwitcher {
+  position: absolute;
+  top: 36px;
+  left: 21px;
+  z-index: 2;
+}
+
+.roleButton {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-8);
+  min-height: 24px;
+  color: var(--app-color-text-primary);
+  font-size: 18px;
+  line-height: 24px;
+  cursor: pointer;
+}
+
+.roleIcon {
+  inline-size: 18px;
+  block-size: 18px;
+  transition: transform 0.2s ease;
+}
+
+.roleIconOpen {
+  transform: rotate(180deg);
+}
+
+.roleMenu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  display: grid;
+  min-width: 168px;
+  overflow: hidden;
+  padding: var(--gap-4);
+  background: var(--app-color-surface);
+  border: 1px solid var(--chat-border);
+  border-radius: var(--border-radius-8);
+  box-shadow: 0 12px 28px rgb(0 0 0 / 8%);
+}
+
+.roleOption {
+  padding: var(--gap-8) var(--gap-12);
+  border-radius: var(--border-radius-6);
+  color: var(--app-color-text-primary);
+  font-size: 14px;
+  line-height: 20px;
+  cursor: pointer;
+}
+
+.roleOption:hover,
+.roleOptionActive {
+  background: var(--chat-input-bg);
+}
+
+.emptyState {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: var(--gap-48);
+}
+
+.emptyContent {
+  display: grid;
+  justify-items: center;
+  gap: var(--gap-20);
+  width: min(776px, 100%);
+}
+
+.greeting {
+  display: grid;
+  justify-items: center;
+  margin-bottom: 17px;
+  color: var(--app-color-text-primary);
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 24px;
+  text-align: center;
+}
+
+.greeting span:last-child {
+  color: #777;
+}
+
+.composer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 32px;
+  align-items: center;
+  width: min(776px, 100%);
+  min-height: 56px;
+  padding: var(--gap-8) 16px var(--gap-8) var(--gap-24);
+  background: var(--chat-input-bg);
+  border-radius: 20px;
+}
+
+.composerInput {
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--app-color-text-primary);
+  font: inherit;
+  font-size: 16px;
+  line-height: 24px;
+}
+
+.composerInput::placeholder {
+  color: var(--app-color-text-secondary);
+}
+
+.sendButton {
+  justify-self: end;
+  inline-size: 24px;
+  block-size: 24px;
+  min-inline-size: 24px;
+  color: #fff;
+  background: var(--app-color-logo-bg);
+  border-radius: 50%;
+}
+
+.sendButton:disabled {
+  opacity: 0.35;
+}
+
+.sendButton svg {
+  inline-size: 15px;
+  block-size: 15px;
+  color: #fff;
+  fill: currentcolor;
+}
+
+.suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--gap-16);
+  margin-top: 0;
+}
+
+.suggestionButton {
+  min-height: 44px;
+  padding-inline: var(--gap-12);
+  color: #565656;
+  background: var(--chat-chip-bg);
+  border: 1px solid var(--chat-border);
+  border-radius: 20px;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.conversation {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  height: 100vh;
+  padding: 92px clamp(48px, 10vw, 160px) 36px;
+}
+
+.messages {
+  display: grid;
+  align-content: end;
+  gap: var(--gap-16);
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: var(--gap-24);
+}
+
+.message {
+  display: grid;
+  gap: var(--gap-8);
+  max-width: 720px;
+  padding: var(--gap-16) var(--gap-20);
+  border-radius: 20px;
+  font-size: 16px;
+  line-height: 24px;
+  overflow: auto;
+}
+
+.userMessage {
+  justify-self: end;
+  background: var(--chat-active-bg);
+}
+
+.aiMessage {
+  justify-self: start;
+  background: var(--chat-panel-bg);
+}
+
+.errorMessage {
+  justify-self: start;
+  color: var(--chat-danger);
+  background: #fff6f6;
+}
+
+.messageAuthor {
+  color: var(--app-color-text-secondary);
+  font-size: 13px;
+  line-height: 16px;
+}
+
+.messageText {
+  white-space: pre-wrap;
+}
+
+.historyPanel {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  padding: 24px 16px 48px;
+  overflow: hidden;
+  background: var(--chat-panel-bg);
+  border-radius: 20px;
+}
+
+.newChatButton {
+  width: 100%;
+  min-height: 40px;
+  background: var(--chat-input-bg);
+  border-radius: 20px;
+  color: var(--app-color-text-primary);
+  font-size: 16px;
+  line-height: 24px;
+}
+
+.newChatIcon {
+  inline-size: 20px;
+  block-size: 20px;
+}
+
+.historyGroups {
+  display: grid;
+  gap: 36px;
+  margin-top: 48px;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.panelState,
+.panelError {
+  margin-top: var(--gap-16);
+  color: var(--app-color-text-secondary);
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.panelError {
+  color: var(--chat-danger);
+}
+
+.historyGroup {
+  display: grid;
+  gap: var(--gap-16);
+}
+
+.historyGroupTitle {
+  color: #777;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 22px;
+}
+
+.threadList {
+  display: grid;
+  gap: var(--gap-2);
+  min-width: 0;
+}
+
+.threadRow {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 24px;
+  gap: var(--gap-4);
+  align-items: center;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 38px;
+  overflow: visible;
+  border-radius: 10px;
+}
+
+.threadButton {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  padding: var(--gap-8);
+  border-radius: 10px;
+  color: var(--app-color-text-primary);
+  font-size: 14px;
+  line-height: 22px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.threadRow:hover,
+.threadRowActive {
+  background: var(--chat-active-bg);
+}
+
+.threadRow:hover .threadButton,
+.threadButtonActive {
+  background: transparent;
+}
+
+.threadTitle {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.renameInput {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--app-color-text-primary);
+  font: inherit;
+}
+
+.threadActions {
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.threadMenuButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 24px;
+  block-size: 24px;
+  min-inline-size: 24px;
+  color: var(--app-color-text-secondary);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.threadMenuButton:hover {
+  background: rgb(0 0 0 / 6%);
+}
+
+.threadMenuPopover {
+  overflow: hidden;
+  border: 1px solid #e7e8eb;
+  border-radius: var(--border-radius-8);
+}
+
+.threadMenu {
+  display: grid;
+  width: 148px;
+  overflow: hidden;
+  background: var(--app-color-surface);
+  border-radius: var(--border-radius-8);
+}
+
+.threadMenuItem {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-6);
+  min-height: 34px;
+  padding: var(--gap-8) var(--gap-12);
+  color: var(--app-color-text-primary);
+  font-size: 13px;
+  line-height: 18px;
+  cursor: pointer;
+}
+
+.threadMenuItem:hover {
+  background: #ebebeb;
+}
+
+.threadMenuItemDanger {
+  color: var(--chat-danger);
+}
+
+.threadMenuIcon {
+  inline-size: 14px;
+  block-size: 14px;
+  flex: 0 0 auto;
+}
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  background: rgb(0 0 0 / 25%);
+}
+
+.deleteDialog {
+  display: grid;
+  gap: 36px;
+  width: min(426px, calc(100vw - 32px));
+  padding: 36px;
+  background: var(--app-color-surface);
+  border-radius: 20px;
+}
+
+.dialogText {
+  display: grid;
+  gap: var(--gap-20);
+}
+
+.dialogTitle {
+  color: var(--app-color-text-primary);
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 24px;
+}
+
+.dialogDescription {
+  color: var(--app-color-text-primary);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.dialogActions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--gap-16);
+}
+
+.cancelButton,
+.deleteButton {
+  min-height: 44px;
+  border-radius: 20px;
+  font-size: 16px;
+  line-height: 24px;
+}
+
+.cancelButton {
+  background: var(--chat-panel-bg);
+  border: 1px solid var(--chat-border);
+  color: var(--app-color-text-primary);
+}
+
+.deleteButton {
+  background: var(--chat-danger);
+  color: var(--app-color-logo-text);
+}
+
+@media (max-width: 980px) {
+  .page {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .historyPanel {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    z-index: 12;
+    width: min(260px, calc(100vw - var(--app-sidebar-width) - 32px));
+    height: min(520px, calc(100vh - 32px));
+    box-shadow: 0 16px 40px rgb(0 0 0 / 12%);
+  }
+
+  .emptyState {
+    padding-right: calc(var(--gap-48) + 260px);
+  }
+}
+
+@media (max-width: 760px) {
+  .workspace {
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+  }
+
+  .emptyState,
+  .conversation {
+    min-height: 100vh;
+    height: auto;
+    padding: 96px var(--gap-20) 260px;
+  }
+
+  .emptyState {
+    padding-right: var(--gap-20);
+  }
+
+  .historyPanel {
+    right: 12px;
+    bottom: 12px;
+    left: calc(var(--app-sidebar-width) + 12px);
+    width: auto;
+    height: 220px;
+    padding: var(--gap-16);
+    overflow: hidden;
+    border-radius: 16px;
+  }
+
+  .historyGroups {
+    gap: var(--gap-20);
+    margin-top: var(--gap-20);
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .suggestions {
+    gap: var(--gap-8);
+  }
+
+  .dialogActions {
+    grid-template-columns: 1fr;
+  }
+}

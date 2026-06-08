@@ -1,0 +1,68 @@
+export type AnalyticsTaskStatus = 'open' | 'closed';
+
+export type AnalyticsTaskComplexity = 'easy' | 'hard';
+
+export type AnalyticsTask = {
+  id: string;
+  initiator: {
+    role: string;
+    name: string;
+  };
+  title: string;
+  complexity: AnalyticsTaskComplexity;
+  period: string;
+  periodCritical?: boolean;
+  performers: string[];
+  sourceUrl: string;
+  status: AnalyticsTaskStatus;
+};
+
+export type TaskComparisonMetric = {
+  id: string;
+  label: string;
+  value: number;
+  deltaLabel: string;
+  deltaValue: number;
+  tone: 'neutral' | 'info' | 'accent';
+};
+
+export type PersonTasksMetric = {
+  id: string;
+  name: string;
+  easy: number;
+  hard: number;
+};
+
+export type AnalyticsTimelineTone = 'info' | 'negative' | 'positive';
+
+export type AnalyticsTimelineMonth = {
+  id: string;
+  label: string;
+  startWeek: number;
+  span: number;
+};
+
+export type AnalyticsTimelineWeek = {
+  id: string;
+  label: string;
+  dates: string;
+  startDate: string;
+  endDate: string;
+};
+
+export type AnalyticsTimelineStage = {
+  id: string;
+  title: string;
+  assignee?: string;
+  startWeek: number;
+  span: number;
+  lane?: number;
+  isCritical?: boolean;
+};
+
+export type AnalyticsTimelineRow = {
+  id: string;
+  title: string;
+  tone: AnalyticsTimelineTone;
+  stages: AnalyticsTimelineStage[];
+};

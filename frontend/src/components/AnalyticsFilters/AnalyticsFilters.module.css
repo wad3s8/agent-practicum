@@ -1,0 +1,17 @@
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--gap-16);
+}
+
+.select {
+  min-width: 132px;
+}
+
+.selectField {
+  min-height: 40px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}

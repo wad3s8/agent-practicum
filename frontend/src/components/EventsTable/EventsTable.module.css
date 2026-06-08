@@ -1,0 +1,92 @@
+.surface {
+  height: calc(100vh - 120px);
+  min-height: 560px;
+  padding: var(--gap-24) var(--gap-16) var(--gap-24) var(--gap-24);
+  overflow: hidden;
+  background: var(--app-color-surface);
+  border: 1px solid var(--app-color-border-subtle);
+  border-radius: var(--border-radius-8);
+}
+
+.viewport {
+  height: 100%;
+  overflow: auto;
+  padding-right: var(--gap-8);
+}
+
+.viewport::-webkit-scrollbar {
+  width: 10px;
+}
+
+.viewport::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.viewport::-webkit-scrollbar-thumb {
+  background: var(--app-color-scrollbar);
+  border-radius: var(--border-radius-8);
+}
+
+.table {
+  min-width: 72rem;
+  table-layout: fixed;
+}
+
+.headCell {
+  color: var(--app-color-text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 18px;
+  border-bottom: 1px solid var(--app-color-border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.headCell.priority {
+  text-align: center;
+}
+
+.checkboxHeadCell,
+.checkboxCell {
+  padding-left: 0;
+  padding-right: var(--gap-16);
+}
+
+.cell {
+  padding: var(--gap-8) var(--gap-12);
+  color: var(--app-color-text-primary);
+  border-bottom: 1px solid var(--app-color-border);
+  vertical-align: middle;
+}
+
+.checkboxCell {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.status {
+  justify-content: center;
+  text-transform: none;
+}
+
+.title {
+  max-width: 100%;
+}
+
+.performers {
+  display: grid;
+  gap: 4px;
+}
+
+.description {
+  color: var(--app-color-text-secondary);
+}
+
+.sourceLink {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--app-color-link);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

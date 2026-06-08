@@ -1,0 +1,55 @@
+.card {
+  display: grid;
+  gap: var(--gap-20);
+  min-width: 0;
+  padding: var(--gap-24);
+  background: var(--app-color-surface);
+  border-radius: var(--border-radius-8);
+}
+
+.header {
+  display: grid;
+  gap: var(--gap-8);
+}
+
+.title {
+  color: var(--app-color-text-primary);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--gap-16);
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gap-6);
+  color: var(--app-color-text-secondary);
+}
+
+.easyMarker,
+.hardMarker {
+  inline-size: 8px;
+  block-size: 8px;
+  border-radius: var(--border-radius-circle);
+}
+
+.easyMarker {
+  background: var(--app-color-chart-easy);
+}
+
+.hardMarker {
+  background: var(--app-color-chart-hard);
+}
+
+.chart {
+  min-block-size: 310px;
+}
+
+.tick {
+  fill: var(--app-color-text-primary);
+  font-size: 12px;
+}
