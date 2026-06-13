@@ -1,0 +1,60 @@
+@import "./styles/reset.css";
+
+:root {
+  --app-sidebar-width: 84px;
+  --app-color-page-bg: var(--color-light-base-bg-secondary);
+  --app-color-surface: var(--color-light-base-bg-primary);
+  --app-color-border: var(--color-light-neutral-300);
+  --app-color-border-subtle: var(--color-light-neutral-200);
+  --app-color-text-primary: var(--color-light-neutral-1500);
+  --app-color-text-secondary: var(--color-light-neutral-700);
+  --app-color-link: var(--color-light-status-info);
+  --app-color-icon-muted: var(--color-light-neutral-700);
+  --app-color-sidebar-active: var(--color-light-neutral-translucent-100);
+  --app-color-scrollbar: var(--color-light-neutral-400);
+  --app-color-logo-bg: var(--color-light-neutral-1300);
+  --app-color-logo-text: var(--color-light-neutral-0);
+  --app-color-chart-easy: var(--color-light-text-link-tint-50, var(--color-light-status-info));
+  --app-color-chart-hard: var(--color-light-status-info-hover, var(--color-light-status-info));
+  --app-color-chart-grid: var(--color-light-neutral-200);
+  --app-color-chart-axis: var(--color-light-neutral-600);
+  --app-color-chart-tooltip-bg: var(--color-light-base-bg-primary);
+  --app-color-chart-cursor: var(--color-light-neutral-translucent-100);
+  --app-color-card-accent: var(--color-light-status-muted-info);
+  --app-color-card-accent-dot: var(--color-light-status-info);
+
+  --app-color-timeline-month-bg: var(--color-light-status-muted-attention);
+  --app-color-timeline-header-bg: var(--color-light-neutral-translucent-100);
+  --app-color-timeline-info-bg: #EFFBFF;
+  --app-color-timeline-negative-bg: #FFF6F8;
+  --app-color-timeline-positive-bg: #F3FFF1;
+  --app-color-timeline-info-stage-bg: #DBF6FF;
+  --app-color-timeline-info-stage-border: #8BD4EC;
+  --app-color-timeline-negative-stage-bg: #FFE6ED;
+  --app-color-timeline-negative-stage-border: #F7C3D1;
+  --app-color-timeline-positive-stage-bg: #EAFBE7;
+  --app-color-timeline-positive-stage-border: #C0F9B5;
+  --app-color-timeline-cell-border: var(--color-light-neutral-translucent-100);
+  --app-color-timeline-today: var(--color-light-status-negative);
+  --app-color-timeline-stage: var(--color-light-base-bg-primary);
+  --app-color-timeline-stage-border: var(--color-light-neutral-translucent-300);
+  --app-color-timeline-stage-negative: var(--color-light-status-negative);
+
+  color: var(--app-color-text-primary);
+  background: var(--app-color-page-bg);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  overflow-x: auto;
+}
+
+#root {
+  min-height: 100vh;
+}

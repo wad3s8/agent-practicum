@@ -1,0 +1,21 @@
+.overlay {
+  position: absolute;
+  z-index: 4;
+  inset: 0;
+  display: grid;
+  min-inline-size: 88rem;
+  grid-template-columns: var(--analytics-timeline-columns);
+  pointer-events: none;
+}
+
+.column {
+  position: relative;
+  grid-column: var(--analytics-current-date-column);
+}
+
+.line {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: var(--analytics-current-date-offset);
+  border-inline-start: 1px dashed var(--app-color-timeline-today);
+}

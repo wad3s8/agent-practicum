@@ -1,0 +1,62 @@
+.page {
+  display: grid;
+  min-height: 100vh;
+  place-items: start center;
+  background: var(--app-color-page-bg);
+}
+
+.content {
+  display: grid;
+  justify-items: center;
+  gap: 96px;
+  width: min(360px, calc(100vw - 40px));
+  padding-top: 136px;
+}
+
+.form {
+  display: grid;
+  gap: var(--gap-16);
+  width: 100%;
+}
+
+.field {
+  display: grid;
+  gap: var(--gap-6);
+}
+
+.label {
+  color: var(--app-color-text-secondary);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.input {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 var(--gap-16);
+  border: 1px solid var(--app-color-border);
+  border-radius: var(--border-radius-8);
+  outline: none;
+  background: var(--app-color-surface);
+  color: var(--app-color-text-primary);
+  font: inherit;
+}
+
+.input:focus {
+  border-color: var(--app-color-link);
+}
+
+.error {
+  color: var(--color-light-status-negative);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.actions {
+  display: grid;
+  gap: var(--gap-12);
+}
+
+.loginButton {
+  width: 100%;
+}

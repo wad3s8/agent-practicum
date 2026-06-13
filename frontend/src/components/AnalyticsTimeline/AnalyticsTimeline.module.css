@@ -1,0 +1,156 @@
+.section {
+  display: grid;
+  gap: var(--gap-20);
+}
+
+.surface {
+  padding: var(--gap-24);
+  overflow: hidden;
+  background: var(--app-color-surface);
+  border-radius: var(--border-radius-8);
+}
+
+.viewport {
+  overflow-x: auto;
+}
+
+.monthRow,
+.weekRow,
+.bodyRow {
+  display: grid;
+  grid-template-columns: var(--analytics-timeline-columns);
+}
+
+.monthRow {
+  align-items: center;
+  gap: var(--gap-4);
+}
+
+.monthCell {
+  display: grid;
+  min-block-size: 28px;
+  place-items: center;
+  background: var(--app-color-timeline-month-bg);
+  border-radius: var(--border-radius-8);
+}
+
+.timelineArea {
+  position: relative;
+  margin-block-start: var(--gap-8);
+}
+
+.weekRow {
+  position: relative;
+  z-index: 1;
+  gap: var(--gap-4);
+}
+
+.cornerCell {
+  grid-column: 1;
+}
+
+.weekCell {
+  display: grid;
+  gap: var(--gap-2);
+  min-block-size: 52px;
+  align-content: center;
+  padding: var(--gap-8);
+  background: var(--app-color-timeline-header-bg);
+  border-inline-start: 1px solid var(--app-color-timeline-cell-border);
+  border-radius: var(--border-radius-6);
+  text-align: center;
+}
+
+.weekDates {
+  color: var(--app-color-text-secondary);
+}
+
+.rows {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: var(--gap-8);
+  margin-block-start: var(--gap-10);
+}
+
+.bodyRow {
+  position: relative;
+  grid-template-rows: repeat(var(--analytics-timeline-lanes), minmax(48px, auto));
+  border-radius: var(--border-radius-8);
+  column-gap: var(--gap-4);
+}
+
+.rowTitle {
+  z-index: 1;
+  display: grid;
+  align-content: center;
+  padding: var(--gap-16);
+  border-radius: var(--border-radius-8);
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  margin-right: var(--gap-6);
+}
+
+.weekBackground {
+  background: inherit;
+  border-inline-start: 1px solid var(--app-color-timeline-cell-border);
+}
+
+.infoRow {
+  background: var(--app-color-timeline-info-bg);
+}
+
+.negativeRow {
+  background: var(--app-color-timeline-negative-bg);
+}
+
+.positiveRow {
+  background: var(--app-color-timeline-positive-bg);
+}
+
+.stage {
+  z-index: 2;
+  display: grid;
+  min-block-size: 40px;
+  align-content: center;
+  justify-items: center;
+  margin: var(--gap-6) 0;
+  padding: var(--gap-8) var(--gap-12);
+  overflow: hidden;
+  background: var(--app-color-timeline-stage);
+  border: 1px solid var(--app-color-timeline-stage-border);
+  border-radius: var(--border-radius-8);
+  text-align: center;
+}
+
+.infoRow .stage, .infoRow .rowTitle {
+  background: var(--app-color-timeline-info-stage-bg);
+  border-color: var(--app-color-timeline-info-stage-border);
+}
+
+.negativeRow .stage, .negativeRow .rowTitle {
+  background: var(--app-color-timeline-negative-stage-bg);
+  border-color: var(--app-color-timeline-negative-stage-border);
+}
+
+.positiveRow .stage, .positiveRow .rowTitle {
+  background: var(--app-color-timeline-positive-stage-bg);
+  border-color: var(--app-color-timeline-positive-stage-border);
+}
+
+
+.stageTitle,
+.stageAssignee {
+  max-inline-size: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stageAssignee {
+  color: var(--app-color-text-secondary);
+}
+
+.criticalStage .stageTitle {
+  color: var(--app-color-timeline-stage-negative);
+}

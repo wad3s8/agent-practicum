@@ -1,0 +1,20 @@
+.page {
+  min-height: 100vh;
+  padding: 30px 40px 90px;
+}
+
+.filters {
+  margin-bottom: 20px;
+}
+
+.state,
+.error {
+  margin-bottom: var(--gap-16);
+  color: var(--app-color-text-secondary);
+  font-size: 15px;
+  line-height: 22px;
+}
+
+.error {
+  color: var(--color-light-status-negative);
+}

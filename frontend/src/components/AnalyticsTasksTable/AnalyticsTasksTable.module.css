@@ -1,0 +1,88 @@
+.surface {
+  padding: var(--gap-24) var(--gap-16) var(--gap-24) var(--gap-24);
+  overflow: hidden;
+  background: var(--app-color-surface);
+  border-radius: var(--border-radius-8);
+}
+
+.viewport {
+  overflow-x: auto;
+}
+
+.table {
+  min-width: 72rem;
+  table-layout: fixed;
+}
+
+.headCell {
+  padding: var(--gap-16) var(--gap-12) var(--gap-12);
+  color: var(--app-color-text-primary);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: left;
+}
+
+.cell {
+  padding: var(--gap-12);
+  color: var(--app-color-text-primary);
+  vertical-align: top;
+}
+
+.initiator {
+  display: grid;
+  gap: var(--gap-6);
+}
+
+.taskTitle {
+  max-width: 100%;
+}
+
+.complexity {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-6);
+  color: var(--app-color-text-primary);
+}
+
+button.complexity {
+  cursor: pointer;
+}
+
+button.complexity:hover .complexityIcon {
+  color: var(--app-color-link);
+}
+
+button.complexity:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.complexityIcon {
+  width: 14px;
+  height: 14px;
+  color: var(--app-color-text-secondary);
+}
+
+.periodCritical {
+  color: var(--color-light-status-negative);
+}
+
+.performers {
+  display: grid;
+  gap: var(--gap-6);
+}
+
+.sourceLink {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--app-color-link);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status {
+  justify-content: center;
+  text-transform: none;
+}

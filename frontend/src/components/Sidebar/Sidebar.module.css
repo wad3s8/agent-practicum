@@ -1,0 +1,40 @@
+.sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 10;
+  display: flex;
+  width: var(--app-sidebar-width);
+  min-height: 100vh;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--gap-24) 0;
+  background: var(--app-color-surface);
+  border-right: 1px solid var(--app-color-border-subtle);
+}
+
+.top {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--gap-32);
+}
+
+.nav {
+  display: grid;
+  gap: var(--gap-12);
+}
+
+.navItem {
+  color: var(--app-color-icon-muted);
+  border-radius: var(--border-radius-8);
+}
+
+.active {
+  color: var(--app-color-text-primary);
+  background: var(--app-color-sidebar-active);
+}
+
+.exitButton {
+  color: var(--app-color-icon-muted);
+}
