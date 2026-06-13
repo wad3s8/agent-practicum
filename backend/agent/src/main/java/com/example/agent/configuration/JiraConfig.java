@@ -1,6 +1,7 @@
 package com.example.agent.configuration;
 
 import com.example.agent.client.JiraClient;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -10,6 +11,7 @@ import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
 import java.util.Base64;
 
+@Slf4j
 @Configuration
 public class JiraConfig {
 
@@ -24,6 +26,7 @@ public class JiraConfig {
 
     @Bean
     public JiraClient jiraClient() {
+        log.info("Jira config: baseUrl={}, email='{}', tokenEmpty={}", baseUrl, email, apiToken.isEmpty());
         String credentials = Base64.getEncoder()
                 .encodeToString((email + ":" + apiToken).getBytes());
 

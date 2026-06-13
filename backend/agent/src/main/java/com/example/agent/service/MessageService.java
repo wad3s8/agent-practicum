@@ -9,6 +9,7 @@ import com.example.agent.handler.GeneralHandler;
 import com.example.agent.handler.JiraInfoHandler;
 import com.example.agent.handler.MeetingSummaryHandler;
 import com.example.agent.handler.TaskAssignmentHandler;
+import com.example.agent.handler.WeeklyDigestHandler;
 import com.example.agent.repository.ChatRepository;
 import com.example.agent.repository.MessageRepository;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +32,7 @@ public class MessageService {
     private final TaskAssignmentHandler taskAssignmentHandler;
     private final JiraInfoHandler jiraInfoHandler;
     private final GeneralHandler generalHandler;
+    private final WeeklyDigestHandler weeklyDigestHandler;
 
     @Transactional
     public SendMessageResponse sendMessage(SendMessageRequest request, User user) {
@@ -75,6 +77,7 @@ public class MessageService {
             case CONFERENCE_INFO -> conferenceInfoHandler.handle(text, history);
             case TASK_ASSIGNMENT -> taskAssignmentHandler.handle(text, history);
             case JIRA_INFO -> jiraInfoHandler.handle(text, history);
+            case WEEKLY_DIGEST -> weeklyDigestHandler.handle(text, history);
             case GENERAL -> generalHandler.handle(text, history);
         };
     }

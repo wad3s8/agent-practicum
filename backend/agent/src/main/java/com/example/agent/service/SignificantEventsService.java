@@ -9,6 +9,7 @@ import com.example.agent.entity.User;
 import com.example.agent.repository.AcknowledgedEventRepository;
 import com.example.agent.repository.SignificantEventRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,6 +18,7 @@ import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SignificantEventsService {
@@ -28,7 +30,9 @@ public class SignificantEventsService {
     // ── Teams — берём напрямую из Jira ───────────────────────────────────────
 
     public List<TeamResponse> getTeams() {
-        return jiraClient.getProjects().stream()
+        var projects = jiraClient.getProjects();
+        log.info("Jira /project вернул {} проектов: {}", projects.size(), projects);
+        return projects.stream()
                 .map(p -> new TeamResponse(p.key(), p.name()))
                 .toList();
     }

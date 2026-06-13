@@ -62,6 +62,12 @@ class OrchestratorServiceTest {
         assertThat(service.detect("Привет, как дела?")).isEqualTo(CaseType.GENERAL);
     }
 
+    @Test
+    void detect_weeklyDigestResponse_returnsWeeklyDigest() {
+        when(callSpec.content()).thenReturn("WEEKLY_DIGEST");
+        assertThat(service.detect("Что мы сделали за неделю?")).isEqualTo(CaseType.WEEKLY_DIGEST);
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {"UNKNOWN", "gibberish", "", "  ", "Не знаю"})
     void detect_unknownOrGarbageResponse_fallsBackToGeneral(String response) {

@@ -5,5 +5,6 @@ public enum CaseType {
     MEETING_SUMMARY,
     CONFERENCE_INFO,
     TASK_ASSIGNMENT,
-    JIRA_INFO
+    JIRA_INFO,
+    WEEKLY_DIGEST
 }

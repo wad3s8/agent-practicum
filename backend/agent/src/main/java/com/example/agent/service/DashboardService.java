@@ -114,10 +114,9 @@ public class DashboardService {
     // ── GET stats ─────────────────────────────────────────────────────────────
 
     public DashboardStatsResponse getStats(String teamKey, LocalDate weekStart) {
-        LocalDate monday = resolveMonday(weekStart);
-        LocalDate prevMonday = monday.minusWeeks(1);
+        LocalDate prevMonday = resolveMonday(weekStart).minusWeeks(1);
 
-        List<JiraIssueDto> current = fetchIssuesRaw(teamKey, monday);
+        List<JiraIssueDto> current = fetchIssuesSnapshot(teamKey);
         List<JiraIssueDto> prev = fetchIssuesRaw(teamKey, prevMonday);
 
         int inWork = (int) current.stream().filter(this::isInWork).count();
@@ -268,6 +267,10 @@ public class DashboardService {
 
     private List<JiraIssueDto> fetchIssuesRaw(String teamKey, LocalDate weekStart) {
         return fetchAllIssues(buildJql(teamKey, weekStart), JIRA_FIELDS);
+    }
+
+    private List<JiraIssueDto> fetchIssuesSnapshot(String teamKey) {
+        return fetchAllIssues(buildJql(teamKey, null), JIRA_FIELDS);
     }
 
     // ── Mapping ───────────────────────────────────────────────────────────────
