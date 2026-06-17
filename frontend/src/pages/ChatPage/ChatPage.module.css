@@ -108,7 +108,7 @@
 .composer {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 32px;
-  align-items: center;
+  align-items: end;
   width: min(776px, 100%);
   min-height: 56px;
   padding: var(--gap-8) 16px var(--gap-8) var(--gap-24);
@@ -118,6 +118,7 @@
 
 .composerInput {
   min-width: 0;
+  max-height: 160px;
   border: 0;
   outline: 0;
   background: transparent;
@@ -125,6 +126,8 @@
   font: inherit;
   font-size: 16px;
   line-height: 24px;
+  overflow-y: auto;
+  resize: none;
 }
 
 .composerInput::placeholder {
@@ -179,37 +182,44 @@
 }
 
 .messages {
-  display: grid;
-  align-content: end;
+  display: flex;
+  flex-direction: column;
   gap: var(--gap-16);
   min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding-bottom: var(--gap-24);
+}
+
+.messages::before {
+  flex: 0 0 auto;
+  margin-top: auto;
+  content: '';
 }
 
 .message {
   display: grid;
   gap: var(--gap-8);
-  max-width: 720px;
+  max-width: min(720px, 100%);
   padding: var(--gap-16) var(--gap-20);
   border-radius: 20px;
   font-size: 16px;
   line-height: 24px;
-  overflow: auto;
+  overflow-wrap: anywhere;
 }
 
 .userMessage {
-  justify-self: end;
+  align-self: end;
   background: var(--chat-active-bg);
 }
 
 .aiMessage {
-  justify-self: start;
+  align-self: start;
   background: var(--chat-panel-bg);
 }
 
 .errorMessage {
-  justify-self: start;
+  align-self: start;
   color: var(--chat-danger);
   background: #fff6f6;
 }
@@ -222,6 +232,101 @@
 
 .messageText {
   white-space: pre-wrap;
+}
+
+.markdownMessage {
+  display: grid;
+  gap: var(--gap-8);
+}
+
+.markdownMessage :where(p, h1, h2, h3, h4, h5, h6, ul, ol, pre, table) {
+  margin: 0;
+}
+
+.markdownMessage :where(p) {
+  white-space: pre-wrap;
+}
+
+.markdownMessage :where(h1, h2, h3, h4, h5, h6) {
+  color: var(--app-color-text-primary);
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 24px;
+}
+
+.markdownMessage :where(h1) {
+  font-size: 18px;
+}
+
+.markdownMessage :where(ul, ol) {
+  display: grid;
+  gap: var(--gap-4);
+  padding-left: var(--gap-24);
+}
+
+.markdownMessage :where(li) {
+  padding-left: var(--gap-2);
+}
+
+.markdownMessage :where(code),
+.markdownMessage :where(pre) {
+  background: rgb(0 0 0 / 6%);
+  border-radius: var(--border-radius-6);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+}
+
+.markdownMessage :where(:not(pre) > code) {
+  padding: 2px var(--gap-4);
+  font-size: 0.92em;
+}
+
+.markdownMessage :where(pre) {
+  max-width: 100%;
+  overflow-x: auto;
+  padding: var(--gap-12);
+  font-size: 14px;
+  line-height: 20px;
+  white-space: pre;
+}
+
+.markdownMessage :where(pre code) {
+  padding: 0;
+  background: transparent;
+}
+
+.markdownMessage :where(a) {
+  color: var(--app-color-logo-bg);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.markdownTableWrapper {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.markdownMessage :where(table) {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.markdownMessage :where(th, td) {
+  padding: var(--gap-8) var(--gap-12);
+  border: 1px solid var(--chat-border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.markdownMessage :where(th) {
+  background: rgb(0 0 0 / 5%);
+  font-weight: 700;
+}
+
+.markdownMessage :where(tbody tr:nth-child(even)) {
+  background: rgb(0 0 0 / 3%);
 }
 
 .historyPanel {

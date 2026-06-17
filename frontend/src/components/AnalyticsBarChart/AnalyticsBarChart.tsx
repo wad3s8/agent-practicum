@@ -79,8 +79,22 @@ export function AnalyticsBarChart({ title, data }: AnalyticsBarChartProps) {
               }}
               cursor={{ fill: 'var(--app-color-chart-cursor)' }}
             />
-            <Bar dataKey="easy" fill="var(--app-color-chart-easy)" maxBarSize={24} name="Лёгкие" radius={[6, 6, 0, 0]} />
-            <Bar dataKey="hard" fill="var(--app-color-chart-hard)" maxBarSize={24} name="Сложные" radius={[6, 6, 0, 0]} />
+            <Bar
+              dataKey="easy"
+              fill="var(--app-color-chart-easy)"
+              isAnimationActive={false}
+              maxBarSize={24}
+              name="Лёгкие"
+              radius={[6, 6, 0, 0]}
+            />
+            <Bar
+              dataKey="hard"
+              fill="var(--app-color-chart-hard)"
+              isAnimationActive={false}
+              maxBarSize={24}
+              name="Сложные"
+              radius={[6, 6, 0, 0]}
+            />
           </BarChart>
         </ResponsiveContainer>
       </div>

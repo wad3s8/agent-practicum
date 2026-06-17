@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { isUnauthorizedApiError } from './api/client';
 import { AuthLayout } from './components/AuthLayout/AuthLayout';
 import { ROUTES } from './constants/routes';
 import { AuthPage } from './pages/AuthPage/AuthPage';
@@ -7,7 +8,13 @@ import { AnalyticsPage } from './pages/AnalyticsPage/AnalyticsPage';
 import { ChatPage } from './pages/ChatPage/ChatPage';
 import { SignificantEventsPage } from './pages/SignificantEventsPage/SignificantEventsPage';
 
-const QUERY_CLIENT = new QueryClient();
+const QUERY_CLIENT = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: (failureCount, error) => !isUnauthorizedApiError(error) && failureCount < 3,
+    },
+  },
+});
 
 function App() {
   return (

@@ -11,6 +11,8 @@ import { SendMIcon } from '@alfalab/icons-glyph/SendMIcon';
 import { TrashCanSIcon } from '@alfalab/icons-glyph/TrashCanSIcon';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
+import ReactMarkdown, { type Components } from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import {
   deleteChat,
   fetchChatMessages,
@@ -57,6 +59,14 @@ const THREAD_GROUPS: { id: ThreadPeriod; label: string }[] = [
 ];
 
 const createId = (prefix: string) => `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
+
+const markdownComponents: Components = {
+  table: ({ children }) => (
+    <div className={styles.markdownTableWrapper}>
+      <table>{children}</table>
+    </div>
+  ),
+};
 
 const createEmptyThread = (): ChatThread => ({
   id: createId('chat'),
@@ -129,14 +139,23 @@ function mergeMessageResponses(currentMessages: MessageResponse[] | undefined, n
   return [...messagesById.values()];
 }
 
+function MarkdownMessage({ text }: { text: string }) {
+  return (
+    <ReactMarkdown className={styles.markdownMessage} components={markdownComponents} remarkPlugins={[remarkGfm]}>
+      {text}
+    </ReactMarkdown>
+  );
+}
+
 export function ChatPage() {
   const queryClient = useQueryClient();
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const messagesListRef = useRef<HTMLDivElement>(null);
   const fallbackThread = useMemo(() => createEmptyThread(), []);
   const [localThreads, setLocalThreads] = useState<ChatThread[]>([]);
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
   const [pendingMessagesByThreadId, setPendingMessagesByThreadId] = useState<Record<string, ChatMessage[]>>({});
-  const [draft, setDraft] = useState('Напиши мне еженедельный отчёт');
+  const [draft, setDraft] = useState('');
   const [selectedRole, setSelectedRole] = useState<(typeof ROLE_OPTIONS)[number]>(ROLE_OPTIONS[0]);
   const [roleMenuOpen, setRoleMenuOpen] = useState(false);
   const [openMenuThreadId, setOpenMenuThreadId] = useState<string | null>(null);
@@ -313,6 +332,18 @@ export function ChatPage() {
     return () => document.removeEventListener('mousedown', handleDocumentMouseDown);
   }, [openMenuThreadId]);
 
+  useEffect(() => {
+    window.requestAnimationFrame(() => {
+      const messagesList = messagesListRef.current;
+
+      if (!messagesList) {
+        return;
+      }
+
+      messagesList.scrollTop = messagesList.scrollHeight;
+    });
+  }, [activeMessagesLoading, activeThread?.id, activeThread?.messages.length, activeThreadResponding, chatError]);
+
   const handleNewChat = () => {
     const newThread = createEmptyThread();
 
@@ -359,7 +390,14 @@ export function ChatPage() {
         [targetThreadId]: [...(currentMessages[targetThreadId] ?? []), userMessage],
       }));
     }
+
     setDraft('');
+    if (inputRef.current) {
+      inputRef.current.value = '';
+      inputRef.current.style.height = 'auto';
+      inputRef.current.scrollTop = 0;
+    }
+
     setRespondingThreadId(targetThreadId);
     sendMessageMutation.mutate({
       targetThreadId,
@@ -526,7 +564,7 @@ export function ChatPage() {
 
         {hasMessages ? (
           <div className={styles.conversation}>
-            <div className={styles.messages} aria-live="polite">
+            <div ref={messagesListRef} className={styles.messages} aria-live="polite">
               {activeMessagesLoading && (
                 <article className={clsx(styles.message, styles.aiMessage)}>
                   <span className={styles.messageAuthor}>VPIKe AI</span>
@@ -540,7 +578,11 @@ export function ChatPage() {
                   className={clsx(styles.message, message.role === 'user' ? styles.userMessage : styles.aiMessage)}
                 >
                   <span className={styles.messageAuthor}>{message.role === 'user' ? 'Вы' : 'VPIKe AI'}</span>
-                  <p className={styles.messageText}>{message.text}</p>
+                  {message.role === 'assistant' ? (
+                    <MarkdownMessage text={message.text} />
+                  ) : (
+                    <p className={styles.messageText}>{message.text}</p>
+                  )}
                 </article>
               ))}
 
@@ -557,6 +599,7 @@ export function ChatPage() {
                   <p className={styles.messageText}>{chatError}</p>
                 </article>
               )}
+
             </div>
 
             <ChatComposer
@@ -781,23 +824,47 @@ export function ChatPage() {
 
 type ChatComposerProps = {
   draft: string;
-  inputRef: React.RefObject<HTMLInputElement | null>;
+  inputRef: React.RefObject<HTMLTextAreaElement | null>;
   responding: boolean;
   onDraftChange: (value: string) => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
 };
 
 function ChatComposer({ draft, inputRef, responding, onDraftChange, onSubmit }: ChatComposerProps) {
+  const formRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    const input = inputRef.current;
+
+    if (!input) {
+      return;
+    }
+
+    input.style.height = 'auto';
+    input.style.height = `${input.scrollHeight}px`;
+  }, [draft, inputRef]);
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key !== 'Enter' || event.shiftKey || responding) {
+      return;
+    }
+
+    event.preventDefault();
+    formRef.current?.requestSubmit();
+  };
+
   return (
-    <form className={styles.composer} onSubmit={onSubmit}>
-      <input
+    <form ref={formRef} className={styles.composer} onSubmit={onSubmit}>
+      <textarea
         ref={inputRef}
         aria-label="Сообщение для VPIKe AI"
         className={styles.composerInput}
         disabled={responding}
         placeholder="Спросите что-нибудь"
+        rows={1}
         value={draft}
         onChange={(event) => onDraftChange(event.target.value)}
+        onKeyDown={handleKeyDown}
       />
       <IconButton
         aria-label="Отправить сообщение"
