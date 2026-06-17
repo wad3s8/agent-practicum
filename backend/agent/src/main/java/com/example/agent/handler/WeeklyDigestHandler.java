@@ -72,7 +72,7 @@ public class WeeklyDigestHandler {
         DashboardStatsResponse stats;
         List<DashboardTaskResponse> tasks;
         try {
-            stats = dashboardService.getStats(teamKey, weekStart);
+            stats = dashboardService.getStats(teamKey, weekStart, weekStart.plusDays(6));
             tasks = dashboardService.getTasks(teamKey, weekStart, weekStart.plusDays(6));
         } catch (Exception e) {
             log.error("Failed to fetch dashboard data: {}", e.getMessage());

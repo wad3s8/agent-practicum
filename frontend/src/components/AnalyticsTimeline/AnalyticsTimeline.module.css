@@ -94,6 +94,7 @@
 .weekBackground {
   background: inherit;
   border-inline-start: 1px solid var(--app-color-timeline-cell-border);
+  pointer-events: none;
 }
 
 .infoRow {
@@ -108,10 +109,14 @@
   background: var(--app-color-timeline-positive-bg);
 }
 
+.accentRow {
+  background: var(--app-color-timeline-accent-bg);
+}
+
 .stage {
   z-index: 2;
   display: grid;
-  min-block-size: 40px;
+  min-block-size: 44px;
   align-content: center;
   justify-items: center;
   margin: var(--gap-6) 0;
@@ -121,6 +126,14 @@
   border: 1px solid var(--app-color-timeline-stage-border);
   border-radius: var(--border-radius-8);
   text-align: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+  cursor: default;
+}
+
+.stage:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  transform: translateY(-1px);
 }
 
 .infoRow .stage, .infoRow .rowTitle {
@@ -136,6 +149,11 @@
 .positiveRow .stage, .positiveRow .rowTitle {
   background: var(--app-color-timeline-positive-stage-bg);
   border-color: var(--app-color-timeline-positive-stage-border);
+}
+
+.accentRow .stage, .accentRow .rowTitle {
+  background: var(--app-color-timeline-accent-stage-bg);
+  border-color: var(--app-color-timeline-accent-stage-border);
 }
 
 

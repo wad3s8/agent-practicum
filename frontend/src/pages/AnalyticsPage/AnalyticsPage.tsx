@@ -46,7 +46,13 @@ const EMPTY_DASHBOARD_STATS: DashboardStatsResponse = {
   doneCount: 0,
   doneDelta: 0,
 };
-const TIMELINE_TONES: AnalyticsTimelineTone[] = ['info', 'positive', 'negative'];
+
+const ROADMAP_LABEL_GROUPS: { id: string; title: string; keyword: string; tone: AnalyticsTimelineTone }[] = [
+  { id: 'analytics', title: 'Аналитика', keyword: 'аналитик', tone: 'info' },
+  { id: 'design', title: 'Дизайн', keyword: 'дизайн', tone: 'positive' },
+  { id: 'development', title: 'Разработка', keyword: 'разработк', tone: 'accent' },
+  { id: 'testing', title: 'Тестирование', keyword: 'тест', tone: 'negative' },
+];
 
 function mapPriority(priority: string | null | undefined): AnalyticsTaskPriority {
   const known = ['Highest', 'High', 'Medium', 'Low', 'Lowest'] as const;
@@ -177,23 +183,40 @@ function mapPersonTaskStats(stats: PersonTaskStatsResponse[]): PersonTasksMetric
   }));
 }
 
-function mapRoadmapToTimeline(tasks: RoadmapTaskResponse[], weeks: AnalyticsTimelineWeek[]): AnalyticsTimelineRow[] {
-  return tasks.map((task, taskIndex) => ({
-    id: task.key,
-    title: task.name,
-    tone: TIMELINE_TONES[taskIndex % TIMELINE_TONES.length],
-    stages: task.phases.map((phase, phaseIndex) => {
-      const startWeek = dateToWeekIndex(phase.startDate, weeks);
-      const endWeek = dateToWeekIndex(phase.endDate, weeks);
-      return {
-        id: `${task.key}-${phaseIndex}`,
-        title: phase.phaseName,
-        assignee: phase.assignee ?? undefined,
-        startWeek,
-        span: Math.max(1, endWeek - startWeek + 1),
-      };
-    }),
-  }));
+function assignLanes<T extends { startWeek: number; span: number }>(stages: T[]): (T & { lane: number })[] {
+  const sorted = [...stages].sort((a, b) => a.startWeek - b.startWeek);
+  const laneEnds: number[] = [];
+
+  return sorted.map((stage) => {
+    const endWeek = stage.startWeek + stage.span - 1;
+    let lane = laneEnds.findIndex((end) => end < stage.startWeek);
+    if (lane === -1) {
+      lane = laneEnds.length;
+      laneEnds.push(endWeek);
+    } else {
+      laneEnds[lane] = endWeek;
+    }
+    return { ...stage, lane: lane + 1 };
+  });
+}
+
+function mapRoadmapByLabel(tasks: RoadmapTaskResponse[], weeks: AnalyticsTimelineWeek[]): AnalyticsTimelineRow[] {
+  return ROADMAP_LABEL_GROUPS.map(({ id, title, keyword, tone }) => {
+    const rawStages = tasks
+      .filter((task) => task.labels.some((label) => label.toLowerCase().includes(keyword)))
+      .map((task) => {
+        const startWeek = dateToWeekIndex(task.startDate, weeks);
+        const endWeek = dateToWeekIndex(task.endDate, weeks);
+        return {
+          id: `${task.key}-${id}`,
+          title: task.name,
+          startWeek,
+          span: Math.max(1, endWeek - startWeek + 1),
+        };
+      });
+
+    return { id, title, tone, stages: assignLanes(rawStages) };
+  });
 }
 
 export function AnalyticsPage() {
@@ -207,12 +230,12 @@ export function AnalyticsPage() {
     queryFn: () => fetchDashboardTasks({ teamKey, weekStart: periodStart, weekEnd: periodEnd }),
   });
   const dashboardStatsQuery = useQuery({
-    queryKey: ['dashboard-stats', teamKey, periodStart],
-    queryFn: () => fetchDashboardStats({ teamKey, weekStart: periodStart }),
+    queryKey: ['dashboard-stats', teamKey, periodStart, periodEnd],
+    queryFn: () => fetchDashboardStats({ teamKey, weekStart: periodStart, weekEnd: periodEnd }),
   });
   const dashboardChartsQuery = useQuery({
-    queryKey: ['dashboard-charts', teamKey, periodStart],
-    queryFn: () => fetchDashboardCharts({ teamKey, weekStart: periodStart }),
+    queryKey: ['dashboard-charts', teamKey, periodStart, periodEnd],
+    queryFn: () => fetchDashboardCharts({ teamKey, weekStart: periodStart, weekEnd: periodEnd }),
   });
   const dashboardRoadmapQuery = useQuery({
     queryKey: ['dashboard-roadmap', teamKey],
@@ -244,7 +267,7 @@ export function AnalyticsPage() {
     [dashboardChartsQuery.data],
   );
   const timelineRows = useMemo(
-    () => mapRoadmapToTimeline(dashboardRoadmapQuery.data?.tasks ?? [], timelineWeeks),
+    () => mapRoadmapByLabel(dashboardRoadmapQuery.data?.tasks ?? [], timelineWeeks),
     [dashboardRoadmapQuery.data, timelineWeeks],
   );
 

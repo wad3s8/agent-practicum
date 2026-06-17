@@ -58,7 +58,9 @@ export function CurrentDateLine({ weeks, currentDate = new Date() }: CurrentDate
           } as CSSProperties
         }
       >
-        <span className={styles.line} />
+        <span className={styles.line}>
+          <span className={styles.label}>Сегодня</span>
+        </span>
       </span>
     </div>
   );

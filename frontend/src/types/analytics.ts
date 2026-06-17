@@ -33,7 +33,7 @@ export type PersonTasksMetric = {
   hard: number;
 };
 
-export type AnalyticsTimelineTone = 'info' | 'negative' | 'positive';
+export type AnalyticsTimelineTone = 'info' | 'negative' | 'positive' | 'accent';
 
 export type AnalyticsTimelineMonth = {
   id: string;

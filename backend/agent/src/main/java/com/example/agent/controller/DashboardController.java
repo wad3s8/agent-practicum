@@ -36,9 +36,10 @@ public class DashboardController {
     @GetMapping("/stats")
     public DashboardStatsResponse getStats(
             @RequestParam(required = false) String teamKey,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate weekStart
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate weekStart,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate weekEnd
     ) {
-        return dashboardService.getStats(teamKey, weekStart);
+        return dashboardService.getStats(teamKey, weekStart, weekEnd);
     }
 
     @GetMapping("/charts")

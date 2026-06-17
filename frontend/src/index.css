@@ -34,6 +34,9 @@
   --app-color-timeline-negative-stage-border: #F7C3D1;
   --app-color-timeline-positive-stage-bg: #EAFBE7;
   --app-color-timeline-positive-stage-border: #C0F9B5;
+  --app-color-timeline-accent-bg: #FFFBEF;
+  --app-color-timeline-accent-stage-bg: #FFF3C4;
+  --app-color-timeline-accent-stage-border: #F5D66C;
   --app-color-timeline-cell-border: var(--color-light-neutral-translucent-100);
   --app-color-timeline-today: var(--color-light-status-negative);
   --app-color-timeline-stage: var(--color-light-base-bg-primary);

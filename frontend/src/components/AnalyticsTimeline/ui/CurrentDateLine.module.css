@@ -17,5 +17,19 @@
   position: absolute;
   inset-block: 0;
   inset-inline-start: var(--analytics-current-date-offset);
-  border-inline-start: 1px dashed var(--app-color-timeline-today);
+  border-inline-start: 2px solid var(--app-color-timeline-today);
+}
+
+.label {
+  position: absolute;
+  top: 0;
+  left: 6px;
+  background: var(--app-color-timeline-today);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 3px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
 }

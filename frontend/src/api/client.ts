@@ -77,6 +77,7 @@ export type RoadmapTaskResponse = {
   startDate: string | null;
   endDate: string | null;
   phases: RoadmapPhaseResponse[];
+  labels: string[];
 };
 
 export type DashboardRoadmapResponse = {

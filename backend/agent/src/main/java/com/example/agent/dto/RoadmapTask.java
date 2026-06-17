@@ -11,6 +11,8 @@ public record RoadmapTask(
         String startDate,
         /** Общая дата окончания задачи */
         String endDate,
-        List<RoadmapPhase> phases
+        List<RoadmapPhase> phases,
+        /** Метки задачи из Jira (аналитика, дизайн, разработка, тестирование и т.д.) */
+        List<String> labels
 ) {
 }

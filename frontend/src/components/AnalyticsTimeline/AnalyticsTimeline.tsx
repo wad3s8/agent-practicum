@@ -12,6 +12,7 @@ const ROW_TONE_CLASS_NAMES = {
   info: styles.infoRow,
   negative: styles.negativeRow,
   positive: styles.positiveRow,
+  accent: styles.accentRow,
 } as const;
 
 function getRowLanes(row: AnalyticsTimelineProps['rows'][number]) {
@@ -75,6 +76,14 @@ export function AnalyticsTimeline({ currentDate, months, rows, weeks }: Analytic
                     >
                       {row.title}
                     </Typography.Text>
+                    {weeks.map((week, weekIndex) => (
+                      <div
+                        key={`bg-${week.id}`}
+                        aria-hidden="true"
+                        className={styles.weekBackground}
+                        style={{ gridColumn: weekIndex + 2, gridRow: `1 / span ${lanes}` }}
+                      />
+                    ))}
                     {row.stages.map((stage) => (
                       <div
                         key={stage.id}

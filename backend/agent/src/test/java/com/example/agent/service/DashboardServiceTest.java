@@ -58,7 +58,7 @@ class DashboardServiceTest {
                 .thenReturn(page(current, true))
                 .thenReturn(page(prev, true));
 
-        DashboardStatsResponse stats = service.getStats("TEST", WEEK);
+        DashboardStatsResponse stats = service.getStats("TEST", WEEK, WEEK.plusDays(6));
 
         assertThat(stats.inWorkCount()).isEqualTo(2);
         assertThat(stats.inWorkDelta()).isEqualTo(1);   // 2 - 1
@@ -75,7 +75,7 @@ class DashboardServiceTest {
         when(jiraClient.search(any()))
                 .thenReturn(page(List.of(), true));
 
-        DashboardStatsResponse stats = service.getStats("EMPTY", WEEK);
+        DashboardStatsResponse stats = service.getStats("EMPTY", WEEK, WEEK.plusDays(6));
 
         assertThat(stats.inWorkCount()).isZero();
         assertThat(stats.backlogCount()).isZero();
@@ -96,7 +96,7 @@ class DashboardServiceTest {
                 .thenReturn(page(current, true))
                 .thenReturn(page(prev, true));
 
-        DashboardStatsResponse stats = service.getStats("TEST", WEEK);
+        DashboardStatsResponse stats = service.getStats("TEST", WEEK, WEEK.plusDays(6));
 
         assertThat(stats.doneCount()).isEqualTo(1);
         assertThat(stats.doneDelta()).isEqualTo(-2); // 1 - 3

@@ -27,7 +27,7 @@ public class DashboardService {
                     "project", "customfield_10015", "priority");
 
     private static final List<String> ROADMAP_PARENT_FIELDS =
-            List.of("summary", "assignee", "duedate", "status", "customfield_10015");
+            List.of("summary", "assignee", "duedate", "status", "customfield_10015", "labels");
 
     private static final List<String> ROADMAP_SUBTASK_FIELDS =
             List.of("summary", "assignee", "duedate", "status", "customfield_10015", "labels", "parent");
@@ -67,11 +67,21 @@ public class DashboardService {
 
     // ── GET stats ─────────────────────────────────────────────────────────────
 
-    public DashboardStatsResponse getStats(String teamKey, LocalDate weekStart) {
-        LocalDate prevMonday = resolveMonday(weekStart).minusWeeks(1);
+    public DashboardStatsResponse getStats(String teamKey, LocalDate periodStart, LocalDate periodEnd) {
+        List<JiraIssueDto> current;
+        List<JiraIssueDto> prev;
 
-        List<JiraIssueDto> current = fetchIssuesSnapshot(teamKey);
-        List<JiraIssueDto> prev = fetchIssuesRaw(teamKey, prevMonday);
+        if (periodStart != null && periodEnd != null) {
+            long periodLength = java.time.temporal.ChronoUnit.DAYS.between(periodStart, periodEnd) + 1;
+            LocalDate prevStart = periodStart.minusDays(periodLength);
+            LocalDate prevEnd = periodEnd.minusDays(periodLength);
+            current = fetchAllIssues(buildTasksJql(teamKey, periodStart, periodEnd));
+            prev = fetchAllIssues(buildTasksJql(teamKey, prevStart, prevEnd));
+        } else {
+            current = fetchIssuesSnapshot(teamKey);
+            LocalDate prevMonday = LocalDate.now().with(DayOfWeek.MONDAY).minusWeeks(1);
+            prev = fetchIssuesRaw(teamKey, prevMonday);
+        }
 
         int inWork = (int) current.stream().filter(this::isInWork).count();
         int done = (int) current.stream().filter(this::isDone).count();
@@ -147,13 +157,17 @@ public class DashboardService {
             List<JiraIssueDto> children = subtasksByParent.getOrDefault(parent.key(), List.of());
             List<RoadmapPhase> phases = buildPhases(children);
 
+            List<String> labels = parent.fields().labels() != null
+                    ? parent.fields().labels()
+                    : List.of();
             roadmapTasks.add(new RoadmapTask(
                     parent.key(),
                     parent.fields().summary(),
                     color,
                     parent.fields().startDate(),
                     parent.fields().duedate(),
-                    phases
+                    phases,
+                    labels
             ));
         }
 

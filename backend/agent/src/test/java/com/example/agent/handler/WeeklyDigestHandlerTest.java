@@ -59,7 +59,7 @@ class WeeklyDigestHandlerTest {
                 .thenReturn("NULL")                // team key extraction → no specific team
                 .thenReturn("## Дайджест за неделю...");
 
-        when(dashboardService.getStats(isNull(), any(LocalDate.class))).thenReturn(STATS);
+        when(dashboardService.getStats(isNull(), any(LocalDate.class), any(LocalDate.class))).thenReturn(STATS);
         when(dashboardService.getTasks(isNull(), any(LocalDate.class), any(LocalDate.class))).thenReturn(List.of(
                 closedTask("PDM-1", "Задача 1", "Иван"),
                 openTask("PDM-2", "Задача 2", "Мария", false)
@@ -69,7 +69,7 @@ class WeeklyDigestHandlerTest {
         String result = handler.handle("Что мы сделали за неделю?", List.of());
 
         assertThat(result).isEqualTo("## Дайджест за неделю...");
-        verify(dashboardService).getStats(isNull(), any(LocalDate.class));
+        verify(dashboardService).getStats(isNull(), any(LocalDate.class), any(LocalDate.class));
         verify(dashboardService).getTasks(isNull(), any(LocalDate.class), any(LocalDate.class));
     }
 
@@ -79,14 +79,14 @@ class WeeklyDigestHandlerTest {
                 .thenReturn("PDM")                 // team key extraction
                 .thenReturn("## Дайджест PDM...");
 
-        when(dashboardService.getStats(eq("PDM"), any(LocalDate.class))).thenReturn(STATS);
+        when(dashboardService.getStats(eq("PDM"), any(LocalDate.class), any(LocalDate.class))).thenReturn(STATS);
         when(dashboardService.getTasks(eq("PDM"), any(LocalDate.class), any(LocalDate.class))).thenReturn(List.of());
         when(eventRepository.findByTeamKeyIn(List.of("PDM"))).thenReturn(List.of());
 
         String result = handler.handle("Дайджест по проекту PDM", List.of());
 
         assertThat(result).contains("Дайджест PDM");
-        verify(dashboardService).getStats(eq("PDM"), any(LocalDate.class));
+        verify(dashboardService).getStats(eq("PDM"), any(LocalDate.class), any(LocalDate.class));
         verify(eventRepository).findByTeamKeyIn(List.of("PDM"));
     }
 
@@ -96,7 +96,7 @@ class WeeklyDigestHandlerTest {
                 .thenReturn("NULL")
                 .thenReturn("Дайджест с проблемами");
 
-        when(dashboardService.getStats(any(), any())).thenReturn(STATS);
+        when(dashboardService.getStats(any(), any(), any())).thenReturn(STATS);
         when(dashboardService.getTasks(any(), any(), any())).thenReturn(List.of());
 
         SignificantEvent redEvent = buildEvent("PDM-99", "RED", "Сервер упал", "PDM", "Команда");
@@ -115,7 +115,7 @@ class WeeklyDigestHandlerTest {
                 .thenReturn("NULL")
                 .thenReturn("Дайджест");
 
-        when(dashboardService.getStats(any(), any())).thenReturn(STATS);
+        when(dashboardService.getStats(any(), any(), any())).thenReturn(STATS);
         when(dashboardService.getTasks(any(), any(), any())).thenReturn(List.of(
                 openTask("PDM-5", "Просроченная задача", "Кто-то", true)
         ));
@@ -134,7 +134,7 @@ class WeeklyDigestHandlerTest {
                 .thenReturn("NULL")
                 .thenReturn("Дайджест");
 
-        when(dashboardService.getStats(any(), any())).thenReturn(STATS);
+        when(dashboardService.getStats(any(), any(), any())).thenReturn(STATS);
         when(dashboardService.getTasks(any(), any(), any())).thenReturn(List.of());
         when(eventRepository.findAll()).thenReturn(List.of());
 
@@ -153,7 +153,7 @@ class WeeklyDigestHandlerTest {
     @Test
     void handle_dashboardServiceThrows_returnsErrorMessage() {
         when(callSpec.content()).thenReturn("NULL");
-        when(dashboardService.getStats(any(), any())).thenThrow(new RuntimeException("Jira unavailable"));
+        when(dashboardService.getStats(any(), any(), any())).thenThrow(new RuntimeException("Jira unavailable"));
 
         String result = handler.handle("Дайджест за неделю", List.of());
 
@@ -167,7 +167,7 @@ class WeeklyDigestHandlerTest {
                 .thenReturn("NULL")
                 .thenReturn("## Дайджест без событий");
 
-        when(dashboardService.getStats(any(), any())).thenReturn(STATS);
+        when(dashboardService.getStats(any(), any(), any())).thenReturn(STATS);
         when(dashboardService.getTasks(any(), any(), any())).thenReturn(List.of());
         when(eventRepository.findAll()).thenThrow(new RuntimeException("DB error"));
 
@@ -184,14 +184,14 @@ class WeeklyDigestHandlerTest {
                 .thenThrow(new RuntimeException("AI error")) // team key call fails
                 .thenReturn("## Дайджест");
 
-        when(dashboardService.getStats(isNull(), any())).thenReturn(STATS);
+        when(dashboardService.getStats(isNull(), any(), any())).thenReturn(STATS);
         when(dashboardService.getTasks(isNull(), any(), any())).thenReturn(List.of());
         when(eventRepository.findAll()).thenReturn(List.of());
 
         String result = handler.handle("Итоги недели", List.of());
 
         assertThat(result).isEqualTo("## Дайджест");
-        verify(dashboardService).getStats(isNull(), any());
+        verify(dashboardService).getStats(isNull(), any(), any());
     }
 
     // ── Stats formatting ──────────────────────────────────────────────────────
@@ -201,7 +201,7 @@ class WeeklyDigestHandlerTest {
         when(callSpec.content()).thenReturn("NULL").thenReturn("ok");
 
         DashboardStatsResponse stats = new DashboardStatsResponse(4, 2, 10, 3, 6, -1);
-        when(dashboardService.getStats(any(), any())).thenReturn(stats);
+        when(dashboardService.getStats(any(), any(), any())).thenReturn(stats);
         when(dashboardService.getTasks(any(), any(), any())).thenReturn(List.of());
         when(eventRepository.findAll()).thenReturn(List.of());
 
