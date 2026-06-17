@@ -1,6 +1,6 @@
 import { Table } from '@alfalab/core-components/table';
-import { ComplexityCell } from './ui/ComplexityCell';
 import { InitiatorCell } from './ui/InitiatorCell';
+import { PriorityCell } from './ui/PriorityCell';
 import { PerformersCell } from './ui/PerformersCell';
 import { PeriodCell } from './ui/PeriodCell';
 import { SourceCell } from './ui/SourceCell';
@@ -9,7 +9,7 @@ import { TaskTitleCell } from './ui/TaskTitleCell';
 import type { AnalyticsTasksTableProps } from './types';
 import styles from './AnalyticsTasksTable.module.css';
 
-export function AnalyticsTasksTable({ tasks, updatingTaskId, onComplexityChange }: AnalyticsTasksTableProps) {
+export function AnalyticsTasksTable({ tasks }: AnalyticsTasksTableProps) {
   return (
     <section className={styles.surface} aria-label="Задачи команды">
       <div className={styles.viewport}>
@@ -22,7 +22,7 @@ export function AnalyticsTasksTable({ tasks, updatingTaskId, onComplexityChange 
               Задача
             </Table.THeadCell>
             <Table.THeadCell className={styles.headCell} width="11%">
-              Сложность задачи
+              Приоритет
             </Table.THeadCell>
             <Table.THeadCell className={styles.headCell} width="11%">
               Сроки
@@ -47,15 +47,7 @@ export function AnalyticsTasksTable({ tasks, updatingTaskId, onComplexityChange 
                   <TaskTitleCell title={task.title} />
                 </Table.TCell>
                 <Table.TCell className={styles.cell}>
-                  <ComplexityCell
-                    complexity={task.complexity}
-                    disabled={updatingTaskId === task.id}
-                    onToggle={
-                      onComplexityChange
-                        ? () => onComplexityChange(task.id, task.complexity === 'easy' ? 'hard' : 'easy')
-                        : undefined
-                    }
-                  />
+                  <PriorityCell priority={task.priority} />
                 </Table.TCell>
                 <Table.TCell className={styles.cell}>
                   <PeriodCell critical={task.periodCritical} period={task.period} />

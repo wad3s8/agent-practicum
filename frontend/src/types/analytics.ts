@@ -1,6 +1,6 @@
 export type AnalyticsTaskStatus = 'open' | 'closed';
 
-export type AnalyticsTaskComplexity = 'easy' | 'hard';
+export type AnalyticsTaskPriority = 'Highest' | 'High' | 'Medium' | 'Low' | 'Lowest' | null;
 
 export type AnalyticsTask = {
   id: string;
@@ -9,7 +9,7 @@ export type AnalyticsTask = {
     name: string;
   };
   title: string;
-  complexity: AnalyticsTaskComplexity;
+  priority: AnalyticsTaskPriority;
   period: string;
   periodCritical?: boolean;
   performers: string[];

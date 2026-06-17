@@ -33,6 +33,45 @@ export function getWeekStartForPeriod(period: string) {
   return formatIsoDate(getStartOfWeek());
 }
 
+export function getPeriodStart(period: string) {
+  const now = new Date();
+
+  if (period === 'week') {
+    return formatIsoDate(getStartOfWeek(now));
+  }
+
+  if (period === 'month') {
+    return formatIsoDate(new Date(now.getFullYear(), now.getMonth(), 1));
+  }
+
+  if (period === 'quarter') {
+    const quarterStartMonth = Math.floor(now.getMonth() / 3) * 3;
+    return formatIsoDate(new Date(now.getFullYear(), quarterStartMonth, 1));
+  }
+
+  return undefined;
+}
+
+
 export function addDays(date: Date, days: number) {
   return new Date(date.getTime() + days * DAY_IN_MS);
+}
+
+export function getPeriodEnd(period: string) {
+  const now = new Date();
+
+  if (period === 'week') {
+    return formatIsoDate(addDays(getStartOfWeek(now), 6));
+  }
+
+  if (period === 'month') {
+    return formatIsoDate(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+  }
+
+  if (period === 'quarter') {
+    const quarterStartMonth = Math.floor(now.getMonth() / 3) * 3;
+    return formatIsoDate(new Date(now.getFullYear(), quarterStartMonth + 3, 0));
+  }
+
+  return undefined;
 }

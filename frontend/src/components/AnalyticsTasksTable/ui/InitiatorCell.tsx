@@ -9,9 +9,6 @@ type InitiatorCellProps = {
 export function InitiatorCell({ initiator }: InitiatorCellProps) {
   return (
     <div className={styles.initiator}>
-      <Typography.Text tag="div" view="primary-small" weight="medium">
-        {initiator.role}
-      </Typography.Text>
       <Typography.Text tag="div" view="primary-small">
         {initiator.name}
       </Typography.Text>

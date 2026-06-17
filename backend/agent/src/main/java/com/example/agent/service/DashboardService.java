@@ -5,11 +5,8 @@ import com.example.agent.dto.*;
 import com.example.agent.dto.jira.JiraIssueDto;
 import com.example.agent.dto.jira.JiraSearchRequest;
 import com.example.agent.dto.jira.JiraSearchResponse;
-import com.example.agent.entity.TaskComplexity;
-import com.example.agent.repository.TaskComplexityRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,7 +24,7 @@ public class DashboardService {
 
     private static final List<String> JIRA_FIELDS =
             List.of("summary", "assignee", "reporter", "duedate", "status",
-                    "project", "customfield_10015");
+                    "project", "customfield_10015", "priority");
 
     private static final List<String> ROADMAP_PARENT_FIELDS =
             List.of("summary", "assignee", "duedate", "status", "customfield_10015");
@@ -52,63 +49,20 @@ public class DashboardService {
             "done", "готово", "closed", "закрыто", "resolved", "решено"
     );
 
-    private static final String COMPLEXITY_SYSTEM_PROMPT = """
-            Ты оцениваешь сложность задач в Jira.
-            По названию задачи определи: EASY (лёгкая) или HARD (сложная).
-
-            HARD — рефакторинг, интеграция с внешними сервисами, архитектурные изменения,
-                   security, миграции данных, сложные алгоритмы.
-            EASY — UI-правки, мелкие фиксы, документация, переименования,
-                   небольшие улучшения без бизнес-логики.
-
-            Отвечай ТОЛЬКО валидным JSON без markdown:
-            {"complexity":"HARD"}
-            """;
-
     private final JiraClient jiraClient;
-    private final TaskComplexityRepository taskComplexityRepository;
-    private final ChatClient chatClient;
 
     @Value("${jira.base-url}")
     private String jiraBaseUrl;
 
     // ── GET tasks ─────────────────────────────────────────────────────────────
 
-    public List<DashboardTaskResponse> getTasks(String teamKey, LocalDate weekStart) {
-        String jql = buildJql(teamKey, weekStart);
+    public List<DashboardTaskResponse> getTasks(String teamKey, LocalDate periodStart, LocalDate periodEnd) {
+        String jql = buildTasksJql(teamKey, periodStart, periodEnd);
         List<JiraIssueDto> issues = fetchAllIssues(jql);
-
-        if (issues.isEmpty()) return List.of();
-
-        // Загружаем все ручные overrides одним запросом
-        List<String> issueKeys = issues.stream().map(JiraIssueDto::key).toList();
-        Map<String, String> overrides = taskComplexityRepository
-                .findByJiraIssueKeyIn(issueKeys)
-                .stream()
-                .collect(Collectors.toMap(TaskComplexity::getJiraIssueKey, TaskComplexity::getComplexity));
 
         return issues.stream()
-                .map(issue -> toResponse(issue, overrides))
+                .map(this::toResponse)
                 .toList();
-    }
-
-    // ── PATCH complexity ──────────────────────────────────────────────────────
-
-    @Transactional
-    public DashboardTaskResponse updateComplexity(String issueKey, String complexity) {
-        TaskComplexity record = taskComplexityRepository.findById(issueKey)
-                .orElseGet(() -> new TaskComplexity(issueKey, complexity));
-        record.setComplexity(complexity);
-        record.setOverriddenAt(java.time.Instant.now());
-        taskComplexityRepository.save(record);
-
-        // Возвращаем обновлённую задачу
-        String jql = "key = \"" + issueKey + "\"";
-        List<JiraIssueDto> issues = fetchAllIssues(jql);
-        if (issues.isEmpty()) throw new NoSuchElementException("Jira issue not found: " + issueKey);
-
-        Map<String, String> overrides = Map.of(issueKey, complexity);
-        return toResponse(issues.getFirst(), overrides);
     }
 
     // ── GET stats ─────────────────────────────────────────────────────────────
@@ -136,8 +90,8 @@ public class DashboardService {
 
     // ── GET charts ────────────────────────────────────────────────────────────
 
-    public DashboardChartsResponse getCharts(String teamKey, LocalDate weekStart) {
-        List<DashboardTaskResponse> tasks = getTasks(teamKey, weekStart);
+    public DashboardChartsResponse getCharts(String teamKey, LocalDate periodStart, LocalDate periodEnd) {
+        List<DashboardTaskResponse> tasks = getTasks(teamKey, periodStart, periodEnd);
 
         List<PersonTaskStats> completed = aggregatePerPerson(
                 tasks.stream().filter(t -> "CLOSED".equals(t.status())).toList()
@@ -154,7 +108,7 @@ public class DashboardService {
         for (DashboardTaskResponse t : tasks) {
             for (String assignee : t.assignees()) {
                 int[] counts = map.computeIfAbsent(assignee, k -> new int[2]);
-                if ("EASY".equals(t.complexity())) counts[0]++;
+                if (!"High".equalsIgnoreCase(t.priority()) && !"Highest".equalsIgnoreCase(t.priority())) counts[0]++;
                 else counts[1]++;
             }
         }
@@ -263,8 +217,6 @@ public class DashboardService {
         return base.with(DayOfWeek.MONDAY);
     }
 
-    // ── Raw fetch (без AI-классификации) ─────────────────────────────────────
-
     private List<JiraIssueDto> fetchIssuesRaw(String teamKey, LocalDate weekStart) {
         return fetchAllIssues(buildJql(teamKey, weekStart), JIRA_FIELDS);
     }
@@ -275,7 +227,7 @@ public class DashboardService {
 
     // ── Mapping ───────────────────────────────────────────────────────────────
 
-    private DashboardTaskResponse toResponse(JiraIssueDto issue, Map<String, String> overrides) {
+    private DashboardTaskResponse toResponse(JiraIssueDto issue) {
         String status = resolveStatus(issue);
         String dueDate = issue.fields().duedate();
         String startDate = issue.fields().startDate();
@@ -283,15 +235,10 @@ public class DashboardService {
                 && LocalDate.parse(dueDate).isBefore(LocalDate.now())
                 && "OPEN".equals(status);
 
-        // Сложность: ручной override → иначе спрашиваем ИИ
-        boolean complexityOverridden = overrides.containsKey(issue.key());
-        String complexity = complexityOverridden
-                ? overrides.get(issue.key())
-                : classifyComplexity(issue.fields().summary());
+        String priority = issue.fields().priority() != null ? issue.fields().priority().name() : null;
 
         String initiatorName = issue.fields().reporter() != null
                 ? issue.fields().reporter().displayName() : "";
-        // Роль репортёра в Jira не возвращается стандартными полями — используем jobTitle если есть
         String initiatorRole = issue.fields().reporter() != null
                 && issue.fields().reporter().emailAddress() != null
                 ? resolveRole(issue.fields().reporter().emailAddress()) : "";
@@ -305,8 +252,7 @@ public class DashboardService {
                 initiatorRole,
                 initiatorName,
                 issue.fields().summary(),
-                complexity,
-                complexityOverridden,
+                priority,
                 formatDate(startDate),
                 formatDate(dueDate),
                 overdue,
@@ -339,26 +285,6 @@ public class DashboardService {
         return "";
     }
 
-    // ── AI complexity ─────────────────────────────────────────────────────────
-
-    private record ComplexityResult(String complexity) {}
-
-    private String classifyComplexity(String summary) {
-        if (summary == null) return "HARD";
-        try {
-            ComplexityResult result = chatClient.prompt()
-                    .system(COMPLEXITY_SYSTEM_PROMPT)
-                    .user("Задача: " + summary)
-                    .call()
-                    .entity(ComplexityResult.class);
-            String c = result.complexity().toUpperCase();
-            return c.equals("EASY") || c.equals("HARD") ? c : "HARD";
-        } catch (Exception e) {
-            log.warn("Complexity AI failed for '{}': {}", summary, e.getMessage());
-            return "HARD";
-        }
-    }
-
     // ── JQL ───────────────────────────────────────────────────────────────────
 
     private String buildJql(String teamKey, LocalDate weekStart) {
@@ -368,13 +294,36 @@ public class DashboardService {
 
         if (weekStart == null) return projectFilter + " ORDER BY created DESC";
 
-        LocalDate monday = weekStart.with(java.time.DayOfWeek.MONDAY);
+        LocalDate monday = weekStart.with(DayOfWeek.MONDAY);
         LocalDate sunday = monday.plusDays(6);
-        String fmt = DateTimeFormatter.ISO_LOCAL_DATE.toString();
 
         return projectFilter
                 + " AND updated >= \"" + monday.format(DateTimeFormatter.ISO_LOCAL_DATE) + "\""
                 + " AND updated <= \"" + sunday.format(DateTimeFormatter.ISO_LOCAL_DATE) + "\""
+                + " ORDER BY created DESC";
+    }
+
+    private String buildTasksJql(String teamKey, LocalDate periodStart, LocalDate periodEnd) {
+        String projectFilter = teamKey != null
+                ? "project = \"" + teamKey + "\""
+                : "project IN (" + getAccessibleProjectKeys() + ")";
+
+        if (periodStart == null || periodEnd == null) {
+            return projectFilter + " ORDER BY created DESC";
+        }
+
+        String inWorkList = IN_WORK_STATUSES.stream()
+                .map(s -> "\"" + s + "\"")
+                .collect(Collectors.joining(", "));
+
+        String today = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE);
+        String startStr = periodStart.format(DateTimeFormatter.ISO_LOCAL_DATE);
+        String endStr = periodEnd.format(DateTimeFormatter.ISO_LOCAL_DATE);
+
+        return projectFilter
+                + " AND ((duedate >= \"" + startStr + "\" AND duedate <= \"" + endStr + "\")"
+                + " OR (duedate is EMPTY AND status in (" + inWorkList + "))"
+                + " OR (duedate < \"" + today + "\" AND status in (" + inWorkList + ")))"
                 + " ORDER BY created DESC";
     }
 

@@ -34,8 +34,7 @@ export type DashboardTaskResponse = {
   initiatorRole: string;
   initiatorName: string;
   taskName: string;
-  complexity: 'EASY' | 'HARD' | string;
-  complexityOverridden: boolean;
+  priority: string | null;
   startDate: string | null;
   dueDate: string | null;
   deadlineOverdue: boolean;
@@ -115,6 +114,7 @@ export type EventsRequestParams = {
 export type DashboardTasksRequestParams = {
   teamKey?: string;
   weekStart?: string;
+  weekEnd?: string;
 };
 
 export type DashboardRoadmapRequestParams = {
@@ -244,15 +244,6 @@ export async function fetchDashboardCharts(params: DashboardTasksRequestParams) 
 
 export async function fetchDashboardRoadmap(params: DashboardRoadmapRequestParams) {
   const response = await API_CLIENT.get<DashboardRoadmapResponse>('/dashboard/roadmap', { params });
-
-  return response.data;
-}
-
-export async function updateTaskComplexity(issueKey: string, complexity: 'EASY' | 'HARD') {
-  const response = await API_CLIENT.patch<DashboardTaskResponse>(
-    `/dashboard/tasks/${encodeURIComponent(issueKey)}/complexity`,
-    { complexity },
-  );
 
   return response.data;
 }

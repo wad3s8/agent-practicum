@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@alfalab/core-components/button';
 import { IconButton } from '@alfalab/core-components/icon-button';
 import { Popover } from '@alfalab/core-components/popover';
-import { ChevronDownMIcon } from '@alfalab/icons-glyph/ChevronDownMIcon';
 import { DotsThreeVerticalSIcon } from '@alfalab/icons-glyph/DotsThreeVerticalSIcon';
 import { PencilSIcon } from '@alfalab/icons-glyph/PencilSIcon';
 import { PlusCircleMIcon } from '@alfalab/icons-glyph/PlusCircleMIcon';
@@ -21,6 +20,7 @@ import {
   sendMessage,
   toggleChatPin,
   updateChatTitle,
+  type CaseType,
   type ChatResponse,
   type MessageResponse,
 } from '../../api/client';
@@ -48,9 +48,12 @@ type ChatThread = {
 
 const EMPTY_THREAD_TITLE = 'Новый чат';
 
-const ROLE_OPTIONS = ['Руководитель', 'Аналитик', 'Разработчик'] as const;
-
-const SUGGESTIONS = ['Дайджест за неделю', 'Саммари встречи', 'Создать задачу', 'Найти в confluence / jira'];
+const SUGGESTIONS: { label: string; caseType: CaseType }[] = [
+  { label: 'Дайджест за неделю', caseType: 'WEEKLY_DIGEST' },
+  { label: 'Саммари встречи', caseType: 'MEETING_SUMMARY' },
+  { label: 'Создать задачу', caseType: 'TASK_ASSIGNMENT' },
+  { label: 'Найти в confluence / jira', caseType: 'CONFERENCE_INFO' },
+];
 
 const THREAD_GROUPS: { id: ThreadPeriod; label: string }[] = [
   { id: 'today', label: 'Сегодня' },
@@ -156,8 +159,6 @@ export function ChatPage() {
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
   const [pendingMessagesByThreadId, setPendingMessagesByThreadId] = useState<Record<string, ChatMessage[]>>({});
   const [draft, setDraft] = useState('');
-  const [selectedRole, setSelectedRole] = useState<(typeof ROLE_OPTIONS)[number]>(ROLE_OPTIONS[0]);
-  const [roleMenuOpen, setRoleMenuOpen] = useState(false);
   const [openMenuThreadId, setOpenMenuThreadId] = useState<string | null>(null);
   const [menuAnchorElement, setMenuAnchorElement] = useState<HTMLElement | null>(null);
   const [threadIdPendingDelete, setThreadIdPendingDelete] = useState<string | null>(null);
@@ -165,6 +166,7 @@ export function ChatPage() {
   const [renameValue, setRenameValue] = useState('');
   const [respondingThreadId, setRespondingThreadId] = useState<string | null>(null);
   const [chatError, setChatError] = useState<string | null>(null);
+  const [selectedSuggestion, setSelectedSuggestion] = useState<string | null>(null);
   const chatsQuery = useQuery({ queryKey: ['chats'], queryFn: fetchChats });
   const baseServerThreads = useMemo(() => (chatsQuery.data ?? []).map((chat) => mapChat(chat)), [chatsQuery.data]);
   const baseThreads = useMemo(() => [...localThreads, ...baseServerThreads], [baseServerThreads, localThreads]);
@@ -204,12 +206,14 @@ export function ChatPage() {
     mutationFn: ({
       chatId,
       text,
+      caseType,
     }: {
       targetThreadId: string;
       tempMessageId: string;
       chatId: number | null;
       text: string;
-    }) => sendMessage({ chatId, text }),
+      caseType?: CaseType;
+    }) => sendMessage({ chatId, text, caseType }),
     onSuccess: (response, variables) => {
       const nextThreadId = String(response.chatId);
 
@@ -258,7 +262,7 @@ export function ChatPage() {
       }));
       setChatError(getApiErrorMessage(error, 'Не удалось отправить сообщение'));
     },
-    onSettled: () => setRespondingThreadId(null),
+    onSettled: () => { setRespondingThreadId(null); setSelectedSuggestion(null); },
   });
   const renameMutation = useMutation({
     mutationFn: ({ chatId, title }: { threadId: string; chatId: number; title: string }) => updateChatTitle(chatId, title),
@@ -295,13 +299,13 @@ export function ChatPage() {
     onError: (error) => setChatError(getApiErrorMessage(error, 'Не удалось удалить чат')),
   });
 
+  const pinnedThreads = useMemo(() => threads.filter((thread) => thread.pinned), [threads]);
+
   const groupedThreads = useMemo(
     () =>
       THREAD_GROUPS.map((group) => ({
         ...group,
-        threads: threads
-          .filter((thread) => thread.period === group.id)
-          .toSorted((firstThread, secondThread) => Number(secondThread.pinned) - Number(firstThread.pinned)),
+        threads: threads.filter((thread) => thread.period === group.id && !thread.pinned),
       })).filter((group) => group.threads.length > 0),
     [threads],
   );
@@ -362,6 +366,10 @@ export function ChatPage() {
       return;
     }
 
+    const caseType = selectedSuggestion
+      ? SUGGESTIONS.find((s) => s.label === selectedSuggestion)?.caseType
+      : undefined;
+
     const targetThreadId = activeThread.id;
     const tempMessageId = createId('user-message');
     const userMessage: ChatMessage = {
@@ -404,6 +412,7 @@ export function ChatPage() {
       tempMessageId,
       chatId: activeThread.backendId,
       text: trimmedPrompt,
+      caseType,
     });
   };
 
@@ -412,8 +421,8 @@ export function ChatPage() {
     handleSendPrompt(draft);
   };
 
-  const handleSuggestionClick = (suggestion: string) => {
-    setDraft(suggestion);
+  const handleSuggestionClick = (label: string) => {
+    setSelectedSuggestion((current) => (current === label ? null : label));
     inputRef.current?.focus();
   };
 
@@ -529,39 +538,6 @@ export function ChatPage() {
   return (
     <section className={styles.page} aria-label="Чат с ИИ">
       <div className={styles.workspace}>
-        <div className={styles.roleSwitcher}>
-          <button
-            aria-expanded={roleMenuOpen}
-            aria-haspopup="listbox"
-            className={styles.roleButton}
-            type="button"
-            onClick={() => setRoleMenuOpen((currentValue) => !currentValue)}
-          >
-            <span>{selectedRole}</span>
-            <ChevronDownMIcon className={clsx(styles.roleIcon, roleMenuOpen && styles.roleIconOpen)} />
-          </button>
-
-          {roleMenuOpen && (
-            <div className={styles.roleMenu} role="listbox">
-              {ROLE_OPTIONS.map((role) => (
-                <button
-                  key={role}
-                  aria-selected={role === selectedRole}
-                  className={clsx(styles.roleOption, role === selectedRole && styles.roleOptionActive)}
-                  role="option"
-                  type="button"
-                  onClick={() => {
-                    setSelectedRole(role);
-                    setRoleMenuOpen(false);
-                  }}
-                >
-                  {role}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
         {hasMessages ? (
           <div className={styles.conversation}>
             <div ref={messagesListRef} className={styles.messages} aria-live="polite">
@@ -627,15 +603,15 @@ export function ChatPage() {
               />
 
               <div className={styles.suggestions} aria-label="Быстрые запросы">
-                {SUGGESTIONS.map((suggestion) => (
+                {SUGGESTIONS.map(({ label }) => (
                   <Button
-                    key={suggestion}
-                    className={styles.suggestionButton}
+                    key={label}
+                    className={clsx(styles.suggestionButton, selectedSuggestion === label && styles.suggestionButtonSelected)}
                     size={40}
                     view="secondary"
-                    onClick={() => handleSuggestionClick(suggestion)}
+                    onClick={() => handleSuggestionClick(label)}
                   >
-                    {suggestion}
+                    {label}
                   </Button>
                 ))}
               </div>
@@ -663,6 +639,90 @@ export function ChatPage() {
         )}
 
         <div className={styles.historyGroups}>
+          {pinnedThreads.length > 0 && (
+            <section className={styles.historyGroup} aria-labelledby="chat-group-pinned">
+              <h2 id="chat-group-pinned" className={styles.historyGroupTitle}>
+                Закреплённые
+              </h2>
+
+              <div className={styles.threadList}>
+                {pinnedThreads.map((thread) => {
+                  const active = thread.id === activeThread?.id;
+                  const menuOpen = openMenuThreadId === thread.id;
+                  const renaming = renamingThreadId === thread.id;
+
+                  return (
+                    <div key={thread.id} className={clsx(styles.threadRow, active && styles.threadRowActive)}>
+                      <button
+                        className={clsx(styles.threadButton, active && styles.threadButtonActive)}
+                        type="button"
+                        onClick={() => setActiveThreadId(thread.id)}
+                      >
+                        {renaming ? (
+                          <input
+                            autoFocus
+                            className={styles.renameInput}
+                            value={renameValue}
+                            onBlur={handleFinishRename}
+                            onChange={(event) => setRenameValue(event.target.value)}
+                            onClick={(event) => event.stopPropagation()}
+                            onKeyDown={handleRenameKeyDown}
+                          />
+                        ) : (
+                          <span className={styles.threadTitle}>
+                            <PushpinMIcon className={styles.threadPinIcon} />
+                            {thread.title}
+                          </span>
+                        )}
+                      </button>
+
+                      <div
+                        data-chat-actions-menu
+                        className={clsx(styles.threadActions, menuOpen && styles.threadActionsOpen)}
+                        onMouseEnter={() => setOpenMenuThreadId(thread.id)}
+                      >
+                        <button
+                          aria-expanded={menuOpen}
+                          aria-label={`Действия с чатом ${thread.title}`}
+                          className={styles.threadMenuButton}
+                          type="button"
+                          onClick={(event) => {
+                            const nextThreadId = menuOpen ? null : thread.id;
+
+                            setOpenMenuThreadId(nextThreadId);
+                            setMenuAnchorElement(nextThreadId ? event.currentTarget : null);
+                          }}
+                          onFocus={(event) => {
+                            setMenuAnchorElement(event.currentTarget);
+                          }}
+                          onKeyDown={(event) => {
+                            if (event.key !== 'Enter' && event.key !== ' ') {
+                              return;
+                            }
+
+                            event.preventDefault();
+                            event.stopPropagation();
+
+                            const nextThreadId = menuOpen ? null : thread.id;
+
+                            setOpenMenuThreadId(nextThreadId);
+                            setMenuAnchorElement(nextThreadId ? event.currentTarget : null);
+                          }}
+                          onMouseEnter={(event) => {
+                            setOpenMenuThreadId(thread.id);
+                            setMenuAnchorElement(event.currentTarget);
+                          }}
+                        >
+                          <DotsThreeVerticalSIcon />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+
           {groupedThreads.map((group) => (
             <section key={group.id} className={styles.historyGroup} aria-labelledby={`chat-group-${group.id}`}>
               <h2 id={`chat-group-${group.id}`} className={styles.historyGroupTitle}>

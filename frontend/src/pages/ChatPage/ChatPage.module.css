@@ -108,7 +108,7 @@
 .composer {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 32px;
-  align-items: end;
+  align-items: center;
   width: min(776px, 100%);
   min-height: 56px;
   padding: var(--gap-8) 16px var(--gap-8) var(--gap-24);
@@ -172,6 +172,12 @@
   border-radius: 20px;
   font-size: 14px;
   line-height: 20px;
+}
+
+.suggestionButtonSelected {
+  color: var(--app-color-text-secondary) !important;
+  background: var(--chat-input-bg) !important;
+  border-color: transparent !important;
 }
 
 .conversation {
@@ -431,11 +437,20 @@
 }
 
 .threadTitle {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 4px;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.threadPinIcon {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  color: var(--app-color-text-secondary);
 }
 
 .renameInput {

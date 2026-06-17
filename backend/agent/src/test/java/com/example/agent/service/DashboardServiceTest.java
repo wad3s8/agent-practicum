@@ -3,8 +3,6 @@ package com.example.agent.service;
 import com.example.agent.client.JiraClient;
 import com.example.agent.dto.*;
 import com.example.agent.dto.jira.*;
-import com.example.agent.entity.TaskComplexity;
-import com.example.agent.repository.TaskComplexityRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -12,7 +10,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
-import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDate;
@@ -20,8 +17,6 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -29,10 +24,6 @@ import static org.mockito.Mockito.when;
 class DashboardServiceTest {
 
     @Mock JiraClient jiraClient;
-    @Mock TaskComplexityRepository complexityRepo;
-    @Mock ChatClient chatClient;
-    @Mock ChatClient.ChatClientRequestSpec chatSpec;
-    @Mock ChatClient.CallResponseSpec callSpec;
 
     DashboardService service;
 
@@ -40,14 +31,7 @@ class DashboardServiceTest {
 
     @BeforeEach
     void setUp() {
-        when(chatClient.prompt()).thenReturn(chatSpec);
-        when(chatSpec.system(anyString())).thenReturn(chatSpec);
-        when(chatSpec.user(anyString())).thenReturn(chatSpec);
-        when(chatSpec.call()).thenReturn(callSpec);
-        // AI complexity always returns EASY by default
-        when(callSpec.entity(DashboardService.class)).thenReturn(null);
-
-        service = new DashboardService(jiraClient, complexityRepo, chatClient);
+        service = new DashboardService(jiraClient);
         ReflectionTestUtils.setField(service, "jiraBaseUrl", "https://jira.example.com");
     }
 
@@ -123,21 +107,16 @@ class DashboardServiceTest {
     // ────────────────────────────────────────────────────────────────
 
     @Test
-    void getCharts_completedPerPerson_groupsByAssigneeAndComplexity() {
-        // Two closed tasks for Иван (1 easy, 1 hard)
-        JiraIssueDto ivan1 = issueWithAssignee("T-1", "Готово", "Иван");
-        JiraIssueDto ivan2 = issueWithAssignee("T-2", "Готово", "Иван");
-        // One closed task for Мария (hard)
-        JiraIssueDto maria = issueWithAssignee("T-3", "Готово", "Мария");
+    void getCharts_completedPerPerson_groupsByAssigneeAndPriority() {
+        // Two closed tasks for Иван (1 easy=Medium, 1 hard=High)
+        JiraIssueDto ivan1 = issueWithAssignee("T-1", "Готово", "Иван", "Medium");
+        JiraIssueDto ivan2 = issueWithAssignee("T-2", "Готово", "Иван", "High");
+        // One closed task for Мария (hard=Highest)
+        JiraIssueDto maria = issueWithAssignee("T-3", "Готово", "Мария", "Highest");
 
         when(jiraClient.search(any())).thenReturn(page(List.of(ivan1, ivan2, maria), true));
-        when(complexityRepo.findByJiraIssueKeyIn(anyList())).thenReturn(List.of(
-                complexity("T-1", "EASY"),
-                complexity("T-2", "HARD"),
-                complexity("T-3", "HARD")
-        ));
 
-        DashboardChartsResponse charts = service.getCharts("TEST", WEEK);
+        DashboardChartsResponse charts = service.getCharts("TEST", WEEK, WEEK.plusDays(6));
 
         // All three tasks are CLOSED → completedPerPerson
         assertThat(charts.completedPerPerson()).hasSize(2);
@@ -156,16 +135,12 @@ class DashboardServiceTest {
 
     @Test
     void getCharts_activePerPerson_onlyInWorkTasks() {
-        JiraIssueDto inWork = issueWithAssignee("T-1", "in progress", "Петр");
-        JiraIssueDto done = issueWithAssignee("T-2", "Готово", "Петр");
+        JiraIssueDto inWork = issueWithAssignee("T-1", "in progress", "Петр", "Low");
+        JiraIssueDto done = issueWithAssignee("T-2", "Готово", "Петр", "Low");
 
         when(jiraClient.search(any())).thenReturn(page(List.of(inWork, done), true));
-        when(complexityRepo.findByJiraIssueKeyIn(anyList())).thenReturn(List.of(
-                complexity("T-1", "EASY"),
-                complexity("T-2", "EASY")
-        ));
 
-        DashboardChartsResponse charts = service.getCharts("TEST", WEEK);
+        DashboardChartsResponse charts = service.getCharts("TEST", WEEK, WEEK.plusDays(6));
 
         // activePerPerson uses OPEN tasks (in progress is OPEN, done is CLOSED)
         assertThat(charts.activePerPerson()).hasSize(1);
@@ -272,17 +247,22 @@ class DashboardServiceTest {
         JiraFieldsDto fields = new JiraFieldsDto(
                 "Summary of " + key, null, null, null,
                 new JiraStatusDto(status), null, null,
-                "2025-05-01", null, null
+                "2025-05-01", null, null, null
         );
         return new JiraIssueDto(key, "https://jira/browse/" + key, fields);
     }
 
     private JiraIssueDto issueWithAssignee(String key, String status, String assigneeName) {
+        return issueWithAssignee(key, status, assigneeName, null);
+    }
+
+    private JiraIssueDto issueWithAssignee(String key, String status, String assigneeName, String priority) {
         JiraUserDto assignee = new JiraUserDto(assigneeName, assigneeName + "@test.com", "acc-" + assigneeName);
+        JiraPriorityDto priorityDto = priority != null ? new JiraPriorityDto(priority) : null;
         JiraFieldsDto fields = new JiraFieldsDto(
                 "Summary of " + key, "2025-05-25", assignee, null,
                 new JiraStatusDto(status), null, null,
-                "2025-05-01", null, null
+                "2025-05-01", null, null, priorityDto
         );
         return new JiraIssueDto(key, "https://jira/browse/" + key, fields);
     }
@@ -293,7 +273,7 @@ class DashboardServiceTest {
         JiraFieldsDto fields = new JiraFieldsDto(
                 phaseLabel, "2025-05-25", assignee, null,
                 new JiraStatusDto("In Progress"), null, null,
-                "2025-05-01", List.of(phaseLabel), parent
+                "2025-05-01", List.of(phaseLabel), parent, null
         );
         return new JiraIssueDto(key, "https://jira/browse/" + key, fields);
     }
@@ -302,10 +282,5 @@ class DashboardServiceTest {
         return new JiraSearchResponse(issues, issues.size(), isLast, null);
     }
 
-    private TaskComplexity complexity(String key, String value) {
-        TaskComplexity tc = new TaskComplexity();
-        tc.setJiraIssueKey(key);
-        tc.setComplexity(value);
-        return tc;
-    }
+
 }

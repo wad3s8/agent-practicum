@@ -9,10 +9,8 @@ public record DashboardTaskResponse(
         /** Имя создателя задачи */
         String initiatorName,
         String taskName,
-        /** EASY | HARD */
-        String complexity,
-        /** true — сложность выставлена вручную, false — оценил ИИ */
-        boolean complexityOverridden,
+        /** Highest | High | Medium | Low | Lowest | null */
+        String priority,
         String startDate,
         String dueDate,
         /** true если дедлайн просрочен и задача не закрыта */

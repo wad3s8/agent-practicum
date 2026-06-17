@@ -73,7 +73,7 @@ public class WeeklyDigestHandler {
         List<DashboardTaskResponse> tasks;
         try {
             stats = dashboardService.getStats(teamKey, weekStart);
-            tasks = dashboardService.getTasks(teamKey, weekStart);
+            tasks = dashboardService.getTasks(teamKey, weekStart, weekStart.plusDays(6));
         } catch (Exception e) {
             log.error("Failed to fetch dashboard data: {}", e.getMessage());
             return "Не удалось получить данные из Jira. Попробуйте позже.";

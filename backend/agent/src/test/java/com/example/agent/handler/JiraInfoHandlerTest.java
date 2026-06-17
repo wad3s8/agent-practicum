@@ -119,7 +119,7 @@ class JiraInfoHandlerTest {
                 ? new JiraUserDto(assigneeName, assigneeName.toLowerCase() + "@test.com", "acc-" + assigneeName)
                 : null;
         JiraFieldsDto fields = new JiraFieldsDto(
-                summary, null, assignee, null, new JiraStatusDto(status), null, null, null, null, null
+                summary, null, assignee, null, new JiraStatusDto(status), null, null, null, null, null, null
         );
         return new JiraIssueDto(key, "https://jira/browse/" + key, fields);
     }

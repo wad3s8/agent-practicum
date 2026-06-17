@@ -19,6 +19,7 @@ public record JiraFieldsDto(
         /** Метки задачи — используются для определения этапа в roadmap */
         List<String> labels,
         /** Родительская задача (заполнено у подзадач) */
-        JiraIssueRefDto parent
+        JiraIssueRefDto parent,
+        JiraPriorityDto priority
 ) {
 }

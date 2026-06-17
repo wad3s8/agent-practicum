@@ -27,31 +27,12 @@ public class DashboardController {
     @GetMapping("/tasks")
     public List<DashboardTaskResponse> getTasks(
             @RequestParam(required = false) String teamKey,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate weekStart
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate weekStart,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate weekEnd
     ) {
-        return dashboardService.getTasks(teamKey, weekStart);
+        return dashboardService.getTasks(teamKey, weekStart, weekEnd);
     }
 
-    /**
-     * PATCH /api/dashboard/tasks/{issueKey}/complexity
-     * Устанавливает сложность задачи вручную (переопределяет оценку ИИ).
-     * Body: { "complexity": "EASY" | "HARD" }
-     */
-    @PatchMapping("/tasks/{issueKey}/complexity")
-    public DashboardTaskResponse updateComplexity(
-            @PathVariable String issueKey,
-            @Valid @RequestBody UpdateComplexityRequest request
-    ) {
-        return dashboardService.updateComplexity(issueKey, request.complexity());
-    }
-
-    /**
-     * GET /api/dashboard/stats?teamKey=PDM&weekStart=2025-05-19
-     *
-     * Возвращает блоки статистики:
-     * — кол-во задач "В работе", "Все (бэклог)", "Готово" за выбранную неделю
-     * — дельту по сравнению с предыдущей неделей
-     */
     @GetMapping("/stats")
     public DashboardStatsResponse getStats(
             @RequestParam(required = false) String teamKey,
@@ -60,19 +41,13 @@ public class DashboardController {
         return dashboardService.getStats(teamKey, weekStart);
     }
 
-    /**
-     * GET /api/dashboard/charts?teamKey=PDM&weekStart=2025-05-19
-     *
-     * Возвращает данные для двух столбчатых диаграмм:
-     * — кол-во выполненных задач на человека (лёгких / сложных)
-     * — кол-во активных задач на человека (лёгких / сложных)
-     */
     @GetMapping("/charts")
     public DashboardChartsResponse getCharts(
             @RequestParam(required = false) String teamKey,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate weekStart
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate weekStart,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate weekEnd
     ) {
-        return dashboardService.getCharts(teamKey, weekStart);
+        return dashboardService.getCharts(teamKey, weekStart, weekEnd);
     }
 
     /**

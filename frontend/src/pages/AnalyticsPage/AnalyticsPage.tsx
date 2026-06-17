@@ -1,16 +1,19 @@
 import { useMemo, useState } from 'react';
 import { Button } from '@alfalab/core-components/button';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import confluenceIconUrl from '../../assets/icons/confluence.svg';
 import jiraIconUrl from '../../assets/icons/jira.svg';
 import {
+  fetchDashboardCharts,
+  fetchDashboardRoadmap,
   fetchDashboardStats,
   fetchDashboardTasks,
   fetchTeams,
   getApiErrorMessage,
-  updateTaskComplexity,
   type DashboardStatsResponse,
   type DashboardTaskResponse,
+  type PersonTaskStatsResponse,
+  type RoadmapTaskResponse,
 } from '../../api/client';
 import { AnalyticsBarChart } from '../../components/AnalyticsBarChart/AnalyticsBarChart';
 import { AnalyticsFilters } from '../../components/AnalyticsFilters/AnalyticsFilters';
@@ -21,14 +24,15 @@ import { TaskComparison } from '../../components/TaskComparison/TaskComparison';
 import type { FilterOption } from '../../components/EventsFilters/types';
 import type {
   AnalyticsTask,
-  AnalyticsTaskComplexity,
+  AnalyticsTaskPriority,
   AnalyticsTimelineMonth,
   AnalyticsTimelineRow,
+  AnalyticsTimelineTone,
   AnalyticsTimelineWeek,
   PersonTasksMetric,
   TaskComparisonMetric,
 } from '../../types/analytics';
-import { addDays, formatDisplayDate, formatIsoDate, getStartOfWeek, getWeekStartForPeriod } from '../../utils/dates';
+import { addDays, formatDisplayDate, formatIsoDate, getPeriodEnd, getPeriodStart, getStartOfWeek } from '../../utils/dates';
 import styles from './AnalyticsPage.module.css';
 
 const ALL_TEAMS_OPTION: FilterOption = { key: 'all', content: 'Все команды' };
@@ -42,72 +46,11 @@ const EMPTY_DASHBOARD_STATS: DashboardStatsResponse = {
   doneCount: 0,
   doneDelta: 0,
 };
-const MOCK_COMPLETED_TASKS_BY_PERSON: PersonTasksMetric[] = [
-  { id: 'mock-completed-vlad-utrobin', name: 'Влад Утробин', easy: 4, hard: 2 },
-  { id: 'mock-completed-anna-smirnova', name: 'Анна Смирнова', easy: 3, hard: 1 },
-  { id: 'mock-completed-ivan-petrov', name: 'Иван Петров', easy: 2, hard: 3 },
-  { id: 'mock-completed-maria-orlova', name: 'Мария Орлова', easy: 5, hard: 1 },
-  { id: 'mock-completed-oleg-kim', name: 'Олег Ким', easy: 1, hard: 2 },
-];
-const MOCK_ACTIVE_TASKS_BY_PERSON: PersonTasksMetric[] = [
-  { id: 'mock-active-vlad-utrobin', name: 'Влад Утробин', easy: 2, hard: 4 },
-  { id: 'mock-active-anna-smirnova', name: 'Анна Смирнова', easy: 5, hard: 2 },
-  { id: 'mock-active-ivan-petrov', name: 'Иван Петров', easy: 3, hard: 3 },
-  { id: 'mock-active-maria-orlova', name: 'Мария Орлова', easy: 4, hard: 1 },
-  { id: 'mock-active-oleg-kim', name: 'Олег Ким', easy: 2, hard: 2 },
-];
-const MOCK_TIMELINE_ROWS: AnalyticsTimelineRow[] = [
-  {
-    id: 'mock-timeline-product-roadmap',
-    title: 'Product roadmap',
-    tone: 'negative',
-    stages: [
-      { id: 'mock-timeline-product-roadmap-discovery', title: 'Discovery', assignee: 'Анна Смирнова', startWeek: 0, span: 2 },
-      {
-        id: 'mock-timeline-product-roadmap-priorities',
-        title: 'Приоритизация',
-        assignee: 'Влад Утробин',
-        startWeek: 2,
-        span: 2,
-        isCritical: true,
-      },
-      { id: 'mock-timeline-product-roadmap-sync', title: 'Согласование', assignee: 'Иван Петров', startWeek: 4, span: 3 },
-    ],
-  },
-  {
-    id: 'mock-timeline-logging',
-    title: 'Логирование сервера',
-    tone: 'positive',
-    stages: [
-      { id: 'mock-timeline-logging-backend', title: 'Backend', assignee: 'Влад Утробин', startWeek: 1, span: 2 },
-      { id: 'mock-timeline-logging-review', title: 'Review', assignee: 'Мария Орлова', startWeek: 3, span: 1 },
-      { id: 'mock-timeline-logging-rollout', title: 'Rollout', assignee: 'Олег Ким', startWeek: 4, span: 2 },
-    ],
-  },
-  {
-    id: 'mock-timeline-stakeholders',
-    title: 'Stakeholder review',
-    tone: 'info',
-    stages: [
-      { id: 'mock-timeline-stakeholders-draft', title: 'Draft', assignee: 'Иван Петров', startWeek: 0, span: 3, lane: 1 },
-      { id: 'mock-timeline-stakeholders-feedback', title: 'Feedback', assignee: 'Анна Смирнова', startWeek: 2, span: 2, lane: 2 },
-      { id: 'mock-timeline-stakeholders-final', title: 'Final notes', assignee: 'Мария Орлова', startWeek: 5, span: 2, lane: 1 },
-    ],
-  },
-  {
-    id: 'mock-timeline-jira-cleanup',
-    title: 'Jira cleanup',
-    tone: 'info',
-    stages: [
-      { id: 'mock-timeline-jira-cleanup-triage', title: 'Triage', assignee: 'Олег Ким', startWeek: 2, span: 1 },
-      { id: 'mock-timeline-jira-cleanup-update', title: 'Обновление статусов', assignee: 'Анна Смирнова', startWeek: 3, span: 2 },
-      { id: 'mock-timeline-jira-cleanup-report', title: 'Отчёт', assignee: 'Влад Утробин', startWeek: 6, span: 1 },
-    ],
-  },
-];
+const TIMELINE_TONES: AnalyticsTimelineTone[] = ['info', 'positive', 'negative'];
 
-function mapComplexity(complexity: string): AnalyticsTaskComplexity {
-  return complexity === 'EASY' ? 'easy' : 'hard';
+function mapPriority(priority: string | null | undefined): AnalyticsTaskPriority {
+  const known = ['Highest', 'High', 'Medium', 'Low', 'Lowest'] as const;
+  return known.find((p) => p === priority) ?? null;
 }
 
 function formatTaskPeriod(startDate: string | null, dueDate: string | null) {
@@ -126,7 +69,7 @@ function mapDashboardTask(task: DashboardTaskResponse): AnalyticsTask {
       name: task.initiatorName || 'Не указан',
     },
     title: task.taskName || task.jiraIssueKey,
-    complexity: mapComplexity(task.complexity),
+    priority: mapPriority(task.priority),
     period: formatTaskPeriod(task.startDate, task.dueDate),
     periodCritical: task.deadlineOverdue,
     performers: task.assignees ?? [],
@@ -217,33 +160,63 @@ function createTimelineMonths(weeks: AnalyticsTimelineWeek[]): AnalyticsTimeline
   return months;
 }
 
+function dateToWeekIndex(dateStr: string | null, weeks: AnalyticsTimelineWeek[]): number {
+  if (!dateStr) return 0;
+  for (let i = 0; i < weeks.length; i++) {
+    if (dateStr <= weeks[i].endDate) return i;
+  }
+  return weeks.length - 1;
+}
+
+function mapPersonTaskStats(stats: PersonTaskStatsResponse[]): PersonTasksMetric[] {
+  return stats.map((stat) => ({
+    id: stat.personName.toLowerCase().replace(/\s+/g, '-'),
+    name: stat.personName,
+    easy: stat.easyCount,
+    hard: stat.hardCount,
+  }));
+}
+
+function mapRoadmapToTimeline(tasks: RoadmapTaskResponse[], weeks: AnalyticsTimelineWeek[]): AnalyticsTimelineRow[] {
+  return tasks.map((task, taskIndex) => ({
+    id: task.key,
+    title: task.name,
+    tone: TIMELINE_TONES[taskIndex % TIMELINE_TONES.length],
+    stages: task.phases.map((phase, phaseIndex) => {
+      const startWeek = dateToWeekIndex(phase.startDate, weeks);
+      const endWeek = dateToWeekIndex(phase.endDate, weeks);
+      return {
+        id: `${task.key}-${phaseIndex}`,
+        title: phase.phaseName,
+        assignee: phase.assignee ?? undefined,
+        startWeek,
+        span: Math.max(1, endWeek - startWeek + 1),
+      };
+    }),
+  }));
+}
+
 export function AnalyticsPage() {
-  const queryClient = useQueryClient();
   const [filters, setFilters] = useState<AnalyticsFiltersValue>({ team: 'all', period: 'week' });
-  const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null);
   const teamKey = filters.team === 'all' ? undefined : filters.team;
-  const weekStart = getWeekStartForPeriod(filters.period);
-  const dashboardTasksQueryKey = ['dashboard-tasks', teamKey, weekStart] as const;
-  const dashboardStatsQueryKey = ['dashboard-stats', teamKey, weekStart] as const;
+  const periodStart = getPeriodStart(filters.period);
+  const periodEnd = getPeriodEnd(filters.period);
   const teamsQuery = useQuery({ queryKey: ['teams'], queryFn: fetchTeams });
   const dashboardTasksQuery = useQuery({
-    queryKey: dashboardTasksQueryKey,
-    queryFn: () => fetchDashboardTasks({ teamKey, weekStart }),
+    queryKey: ['dashboard-tasks', teamKey, periodStart, periodEnd],
+    queryFn: () => fetchDashboardTasks({ teamKey, weekStart: periodStart, weekEnd: periodEnd }),
   });
   const dashboardStatsQuery = useQuery({
-    queryKey: dashboardStatsQueryKey,
-    queryFn: () => fetchDashboardStats({ teamKey, weekStart }),
+    queryKey: ['dashboard-stats', teamKey, periodStart],
+    queryFn: () => fetchDashboardStats({ teamKey, weekStart: periodStart }),
   });
-  const complexityMutation = useMutation({
-    mutationFn: ({ taskId, complexity }: { taskId: string; complexity: AnalyticsTaskComplexity }) =>
-      updateTaskComplexity(taskId, complexity === 'easy' ? 'EASY' : 'HARD'),
-    onMutate: ({ taskId }) => setUpdatingTaskId(taskId),
-    onSuccess: (updatedTask) => {
-      queryClient.setQueryData<DashboardTaskResponse[]>(dashboardTasksQueryKey, (currentTasks) =>
-        currentTasks?.map((task) => (task.jiraIssueKey === updatedTask.jiraIssueKey ? updatedTask : task)),
-      );
-    },
-    onSettled: () => setUpdatingTaskId(null),
+  const dashboardChartsQuery = useQuery({
+    queryKey: ['dashboard-charts', teamKey, periodStart],
+    queryFn: () => fetchDashboardCharts({ teamKey, weekStart: periodStart }),
+  });
+  const dashboardRoadmapQuery = useQuery({
+    queryKey: ['dashboard-roadmap', teamKey],
+    queryFn: () => fetchDashboardRoadmap({ teamKey }),
   });
 
   const teamOptions = useMemo<FilterOption[]>(
@@ -256,17 +229,24 @@ export function AnalyticsPage() {
     ],
     [teamsQuery.data],
   );
+  const jiraProjectUrl = teamKey ? `https://vladutrobin2006.atlassian.net/jira/software/projects/${teamKey}/list` : undefined;
+  const confluenceProjectUrl = teamKey ? `https://vladutrobin2006.atlassian.net/wiki/spaces/${teamKey}` : undefined;
   const tasks = useMemo(() => (dashboardTasksQuery.data ?? []).map(mapDashboardTask), [dashboardTasksQuery.data]);
   const comparisonMetrics = useMemo(() => buildComparisonMetrics(dashboardStatsQuery.data), [dashboardStatsQuery.data]);
-  const completedTasksByPerson = MOCK_COMPLETED_TASKS_BY_PERSON;
-  const activeTasksByPerson = MOCK_ACTIVE_TASKS_BY_PERSON;
   const timelineWeeks = useMemo(() => createTimelineWeeks(), []);
   const timelineMonths = useMemo(() => createTimelineMonths(timelineWeeks), [timelineWeeks]);
-  const timelineRows = MOCK_TIMELINE_ROWS;
-
-  const handleComplexityChange = (taskId: string, complexity: AnalyticsTaskComplexity) => {
-    complexityMutation.mutate({ taskId, complexity });
-  };
+  const completedTasksByPerson = useMemo(
+    () => mapPersonTaskStats(dashboardChartsQuery.data?.completedPerPerson ?? []),
+    [dashboardChartsQuery.data],
+  );
+  const activeTasksByPerson = useMemo(
+    () => mapPersonTaskStats(dashboardChartsQuery.data?.activePerPerson ?? []),
+    [dashboardChartsQuery.data],
+  );
+  const timelineRows = useMemo(
+    () => mapRoadmapToTimeline(dashboardRoadmapQuery.data?.tasks ?? [], timelineWeeks),
+    [dashboardRoadmapQuery.data, timelineWeeks],
+  );
 
   return (
     <div className={styles.page}>
@@ -276,7 +256,8 @@ export function AnalyticsPage() {
           <div className={styles.externalLinks}>
             <Button
               className={styles.linkButton}
-              href="https://jira.alfabank.ru"
+              disabled={!jiraProjectUrl}
+              href={jiraProjectUrl}
               leftAddons={<img alt="" className={styles.serviceIcon} src={jiraIconUrl} />}
               size={32}
               target="_blank"
@@ -286,7 +267,8 @@ export function AnalyticsPage() {
             </Button>
             <Button
               className={styles.linkButton}
-              href="https://confluence.alfabank.ru"
+              disabled={!confluenceProjectUrl}
+              href={confluenceProjectUrl}
               leftAddons={<img alt="" className={styles.serviceIcon} src={confluenceIconUrl} />}
               size={32}
               target="_blank"
@@ -306,17 +288,8 @@ export function AnalyticsPage() {
         {!dashboardTasksQuery.isLoading && !dashboardTasksQuery.isError && (
           <>
             {tasks.length === 0 && <p className={styles.state}>Задач по выбранным фильтрам нет</p>}
-            <AnalyticsTasksTable
-              tasks={tasks}
-              updatingTaskId={updatingTaskId}
-              onComplexityChange={handleComplexityChange}
-            />
+            <AnalyticsTasksTable tasks={tasks} />
           </>
-        )}
-        {complexityMutation.isError && (
-          <p className={styles.error} role="alert">
-            {getApiErrorMessage(complexityMutation.error, 'Не удалось обновить сложность')}
-          </p>
         )}
       </div>
 

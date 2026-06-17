@@ -35,4 +35,4 @@ jira:
   email: "${JIRA_EMAIL:}"
   api-token: "${JIRA_API_TOKEN:}"
   # Интервал опроса Jira в миллисекундах (по умолчанию 5 минут)
-  polling-interval-ms: "${JIRA_POLLING_INTERVAL_MS:300000}"
+  polling-interval-ms: "${JIRA_POLLING_INTERVAL_MS:300000000}"
