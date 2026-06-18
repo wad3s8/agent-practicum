@@ -7,7 +7,7 @@ type EventTitleCellProps = {
 
 export function EventTitleCell({ title }: EventTitleCellProps) {
   return (
-    <Typography.Text className={styles.title} tag="div" view="primary-medium" weight="medium">
+    <Typography.Text className={styles.title} tag="div" view="primary-medium" weight="regular">
       {title}
     </Typography.Text>
   );

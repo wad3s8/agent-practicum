@@ -7,7 +7,7 @@ type TaskTitleCellProps = {
 
 export function TaskTitleCell({ title }: TaskTitleCellProps) {
   return (
-    <Typography.Text className={styles.taskTitle} tag="div" view="primary-small" weight="medium">
+    <Typography.Text className={styles.taskTitle} tag="div" view="primary-small" weight="regular">
       {title}
     </Typography.Text>
   );

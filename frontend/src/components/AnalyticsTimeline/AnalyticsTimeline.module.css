@@ -84,11 +84,13 @@
   z-index: 1;
   display: grid;
   align-content: center;
+  justify-items: center;
   padding: var(--gap-16);
   border-radius: var(--border-radius-8);
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;
   margin-right: var(--gap-6);
+  text-align: center;
 }
 
 .weekBackground {

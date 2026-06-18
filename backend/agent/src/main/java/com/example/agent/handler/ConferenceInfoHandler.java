@@ -71,7 +71,10 @@ public class ConferenceInfoHandler {
     private List<ConfluencePageDto> fetchAllPages() {
         try {
             ConfluenceSearchResponse response = confluenceClient.getAllPages("page", 50);
-            return response.results() != null ? response.results() : List.of();
+            List<ConfluencePageDto> pages = response.results() != null ? response.results() : List.of();
+            log.info("Confluence pages fetched ({}): {}", pages.size(),
+                    pages.stream().map(p -> p.id() + " | " + p.title()).toList());
+            return pages;
         } catch (Exception e) {
             log.error("Failed to fetch Confluence pages: {}", e.getMessage());
             return null;

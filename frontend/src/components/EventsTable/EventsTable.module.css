@@ -82,6 +82,10 @@
   color: var(--app-color-text-secondary);
 }
 
+.rowAcknowledged td {
+  opacity: 0.4;
+}
+
 .sourceLink {
   display: block;
   max-width: 100%;

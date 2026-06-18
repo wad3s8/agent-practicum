@@ -184,10 +184,9 @@ function mapPersonTaskStats(stats: PersonTaskStatsResponse[]): PersonTasksMetric
 }
 
 function assignLanes<T extends { startWeek: number; span: number }>(stages: T[]): (T & { lane: number })[] {
-  const sorted = [...stages].sort((a, b) => a.startWeek - b.startWeek);
   const laneEnds: number[] = [];
 
-  return sorted.map((stage) => {
+  return stages.map((stage) => {
     const endWeek = stage.startWeek + stage.span - 1;
     let lane = laneEnds.findIndex((end) => end < stage.startWeek);
     if (lane === -1) {

@@ -34,7 +34,7 @@ export function EventsTable({ events, onToggleEvent }: EventsTableProps) {
           </Table.THead>
           <Table.TBody>
             {events.map((event) => (
-              <Table.TRow key={event.id}>
+              <Table.TRow key={event.id} className={clsx(event.selected && styles.rowAcknowledged)}>
                 <Table.TCell className={clsx(styles.cell, styles.checkboxCell)}>
                   <SelectionCell
                     checked={event.selected ?? false}

@@ -9,7 +9,7 @@ type PeriodCellProps = {
 
 export function PeriodCell({ period, critical = false }: PeriodCellProps) {
   return (
-    <Typography.Text className={clsx(critical && styles.periodCritical)} tag="span" view="primary-small" weight={"medium"}>
+    <Typography.Text className={clsx(critical && styles.periodCritical)} tag="span" view="primary-small" weight={"regular"}>
       {period}
     </Typography.Text>
   );

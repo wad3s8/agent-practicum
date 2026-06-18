@@ -118,8 +118,8 @@ public class DashboardService {
         for (DashboardTaskResponse t : tasks) {
             for (String assignee : t.assignees()) {
                 int[] counts = map.computeIfAbsent(assignee, k -> new int[2]);
-                if (!"High".equalsIgnoreCase(t.priority()) && !"Highest".equalsIgnoreCase(t.priority())) counts[0]++;
-                else counts[1]++;
+                if ("High".equalsIgnoreCase(t.priority()) || "Highest".equalsIgnoreCase(t.priority()) || "Medium".equalsIgnoreCase(t.priority())) counts[1]++;
+                else counts[0]++;
             }
         }
         return map.entrySet().stream()
